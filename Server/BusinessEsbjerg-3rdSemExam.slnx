@@ -5,5 +5,7 @@
   <Folder Name="/Infra/">
     <Project Path="Infra/Infrastructure.csproj" />
   </Folder>
+  <Project Path="IntegrationTests/IntegrationTests.csproj" />
   <Project Path="Service/Service.csproj" />
+  <Project Path="UnitTests/UnitTests.csproj" />
 </Solution>
