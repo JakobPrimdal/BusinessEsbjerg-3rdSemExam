@@ -1,0 +1,55 @@
+name: Tests for the entire pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-client:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+    defaults: 
+      run:
+        working-directory: Client
+    
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      
+      - name: Run tests
+        run: bun test
+  
+  test-server:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    defaults: 
+      run:
+        working-directory: Server
+    
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+        
+      - name: Restore dependencies
+        run: dotnet restore
+      
+      - name: Build
+        run: dotnet build --no-restore
+      
+      - name: Run tests
+        run: dotnet test --no-build
