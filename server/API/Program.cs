@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Api;
+using Api.Seed;
 using Infrastructure;
 using Infrastructure.Entities;
 using LinqToDB;
@@ -23,6 +24,9 @@ builder.Services.AddScoped<LoginDb>(_ => new LoginDb(userDbOptions));
 builder.Services.AddScoped<AuthService>();
 
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
+
+// Admin seeder
+builder.Services.AddScoped<AdminSeeder>();
 
 builder.Services.AddControllers();
 builder.Services.AddCors();
@@ -77,6 +81,7 @@ using (var scope = app.Services.CreateScope())
     db.CreateTable<User>(tableOptions: TableOptions.CreateIfNotExists);
     db.CreateTable<Role>(tableOptions: TableOptions.CreateIfNotExists);
 
+    // Seed roles
     foreach (var role in Enum.GetValues<UserRole>())
     {
         var roleId = (int)role;
@@ -93,6 +98,10 @@ using (var scope = app.Services.CreateScope())
         }
 
     }
+    
+    // Seed inital admin user
+    var adminSeeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
+    adminSeeder.Seed();
 }
 
 // CORS

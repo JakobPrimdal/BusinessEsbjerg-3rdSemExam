@@ -9,7 +9,7 @@ namespace Api.Controllers;
 
 public class AuthController(AuthService authService) : ControllerBase
 {
-    // Need admin seed data - so this endpoint can become admin-only authorized
+    [Authorize(Roles = "Admin")]
     [HttpPost(nameof(Register))]
     public async Task<UserDTO> Register([FromBody] RegisterRequestDTO dto)
     {
