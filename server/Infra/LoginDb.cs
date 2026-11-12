@@ -7,4 +7,6 @@ namespace Infrastructure;
 public class LoginDb (DataOptions<LoginDb> options) : DataConnection(options.Options)
 {
     public ITable<User> Users => this.GetTable<User>();
+
+    public ITable<Role> Roles => this.GetTable<Role>();
 }

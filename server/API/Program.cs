@@ -75,6 +75,24 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<LoginDb>();
     db.CreateTable<User>(tableOptions: TableOptions.CreateIfNotExists);
+    db.CreateTable<Role>(tableOptions: TableOptions.CreateIfNotExists);
+
+    foreach (var role in Enum.GetValues<UserRole>())
+    {
+        var roleId = (int)role;
+
+        var exists = db.Roles.Any(r => r.Id == roleId);
+
+        if (!exists)
+        {
+            db.Insert(new Role
+            {
+                Id = roleId,
+                Name = role.ToString()
+            });
+        }
+
+    }
 }
 
 // CORS

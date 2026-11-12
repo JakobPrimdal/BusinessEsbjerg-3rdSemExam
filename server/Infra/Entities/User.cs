@@ -9,4 +9,7 @@ public class User
     public string PasswordHash { get; set; } = "";
     public UserRole Role { get; set; }
     public bool IsActive { get; set; } = true;
+    
+    [Association(ThisKey = nameof(Role), OtherKey = nameof(Entities.Role.Id))]
+    public Role? UserRole { get; set; }
 }
