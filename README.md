@@ -25,7 +25,7 @@ The API runs on localhost:5194
 
 ## Running with Docker
 
-(The Dockerfile expects `Jwt__Secret`, `Admin_Username`, and `Admin__Password` as an environment variables.)
+(The Dockerfile expects `Jwt__Secret`, `Admin_Username`, `Admin__Password`, and `Cors__Origins__0` as an environment variables.)
 
 1. Build an image of the backend. 
 Use this command: `docker build -t business-esb-backend .`
