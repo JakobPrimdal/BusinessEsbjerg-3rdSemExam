@@ -68,6 +68,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             RoleClaimType = "role",
             NameClaimType = JwtRegisteredClaimNames.UniqueName
         };
+
+        o.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                // If the "jwt" cookie exists, use it as the token.
+                // Otherwise, use normal Authorization
+                if (ctx.Request.Cookies.TryGetValue("jwt", out var token))
+                    ctx.Token = token;
+                
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -99,16 +112,19 @@ using (var scope = app.Services.CreateScope())
 
     }
     
-    // Seed inital admin user
+    // Seed initial admin user
     var adminSeeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
     adminSeeder.Seed();
 }
 
 // CORS
+var allowedOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? [];
+
 app.UseCors(config => config
     .AllowAnyHeader()
     .AllowAnyMethod()
-    .SetIsOriginAllowed(_ => true));
+    .AllowCredentials()
+    .WithOrigins(allowedOrigins));
 
 app.UseExceptionHandler(); // Use our custom GlobalExceptionHandler
 app.UseAuthentication();

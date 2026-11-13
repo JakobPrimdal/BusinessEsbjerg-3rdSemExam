@@ -15,20 +15,46 @@ public class AuthController(AuthService authService) : ControllerBase
     {
         return await authService.Register(dto);
     }
-    
+
     [HttpPost(nameof(Login))]
-    public async Task<LoginResponseDTO> Login([FromBody] LoginRequestDTO dto)
-        => await authService.Login(dto);
+    public async Task<UserDTO> Login([FromBody] LoginRequestDTO dto)
+    {
+        var result =  await authService.Login(dto);
+        
+        // The token goes into an HttpOnly cookie, not into the JSON body
+        Response.Cookies.Append("jwt", result.Token, CookieSettings(DateTimeOffset.UtcNow.AddHours(2)));
+
+        return result.User;
+    }
     
-    [Authorize]  //means only with a valid token
+    [HttpPost(nameof(Logout))]
+    public IActionResult Logout()
+    {
+        // JavaScript can't remove an HttpOnly cookie, so the server has to
+        Response.Cookies.Delete("jwt", CookieSettings(null));
+        return NoContent();
+    }
+    
+    [Authorize]
     [HttpGet(nameof(GetMe))]
     public async Task<UserDTO> GetMe()
     {
         var userId = HttpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
         return await authService.GetUser(userId);
     }
-    
+
     [Authorize(Roles = "Admin")]
     [HttpGet(nameof(AdminCheck))]
-    public string AdminCheck() => "You are an admin";
+    public string AdminCheck()
+    {
+      return "You are an admin";  
+    }
+    
+    private static CookieOptions CookieSettings(DateTimeOffset? expires) => new()
+    {
+        HttpOnly = true,
+        Secure = true,
+        SameSite = SameSiteMode.Strict,
+        Expires = expires
+    };
 }
