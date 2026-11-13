@@ -29,11 +29,6 @@ export interface RegisterRequestDTO {
   role?: string;
 }
 
-export interface LoginResponseDTO {
-  token?: string;
-  user?: UserDTO;
-}
-
 export interface LoginRequestDTO {
   username?: string;
   password?: string;
@@ -330,12 +325,26 @@ export class Api<
      * @request POST:/Login
      */
     authLogin: (data: LoginRequestDTO, params: RequestParams = {}) =>
-      this.request<LoginResponseDTO, any>({
+      this.request<UserDTO, any>({
         path: `/Login`,
         method: "POST",
         body: data,
         type: ContentType.Json,
         format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Auth
+     * @name AuthLogout
+     * @request POST:/Logout
+     */
+    authLogout: (params: RequestParams = {}) =>
+      this.request<Blob, any>({
+        path: `/Logout`,
+        method: "POST",
         ...params,
       }),
 

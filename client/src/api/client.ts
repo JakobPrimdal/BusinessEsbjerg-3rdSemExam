@@ -1,10 +1,12 @@
 import { Api } from "./Api";
-import { getToken } from "./token";
+
+const baseUrl = process.env.BUN_PUBLIC_API_URL;
+
+if (!baseUrl) {
+  throw new Error("BUN_PUBLIC_API_URL is not set");
+}
 
 export const api = new Api({
-  baseUrl: process.env.BUN_PUBLIC_API_URL ?? "http://localhost:5194",
-  securityWorker: () => {
-    const t = getToken();
-    return t ? { headers: { Authorization: `Bearer ${t}` } } : {};
-  },
+  baseUrl,
+  baseApiParams: { credentials: "include" },
 });

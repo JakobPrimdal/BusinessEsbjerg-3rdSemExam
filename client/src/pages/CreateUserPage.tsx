@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 // /Register takes the role as its enum NAME (string), not the number
 const roles = [
   { value: "User", label: "Medarbejder" },
-  { value: "Accountant", label: "Bogholderi" },
+  { value: "Accountant", label: "Ferieansvarlig" },
   { value: "Admin", label: "Administrator" },
 ];
 
