@@ -107,6 +107,10 @@ using (var scope = app.Services.CreateScope())
 
     }
     
+    // Seed inital admin user
+    var adminSeeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
+    adminSeeder.Seed();
+    
     var holidayDb = scope.ServiceProvider.GetRequiredService<HolidayDb>();
     holidayDb.CreateTable<RuleValue>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<WorkHour>(tableOptions: TableOptions.CreateIfNotExists);
@@ -128,10 +132,6 @@ using (var scope = app.Services.CreateScope())
     }
     SeedRule(HolidayService.DaysPerMonthKey, "2.08");
     SeedRule(HolidayService.Week6HoursPerMonthKey, "3.083");
-    
-    // Seed inital admin user
-    var adminSeeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
-    adminSeeder.Seed();
 }
 
 // CORS

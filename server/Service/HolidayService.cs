@@ -71,6 +71,7 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
 
     public HolidayBalanceDTO GetBalance(string userId)
     {
+        EnsureUserExists(userId);
         var accounts = db.HolidayAccounts
             .Where(a => a.UserId == userId)
             .OrderBy(a => a.HolidayType)
@@ -108,7 +109,9 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
     {
         if (string.IsNullOrWhiteSpace(dto.UserId))
             throw new BadRequestException("UserId is required");
-
+        
+        EnsureUserExists(dto.UserId);
+        
         decimal[] days = [dto.MonHours, dto.TueHours, dto.WedHours, dto.ThuHours, dto.FriHours, dto.SatHours, dto.SunHours];
         if (days.Any(h => h < 0 || h > 24))
             throw new BadRequestException("Hours per day must be between 0 and 24");
@@ -232,4 +235,10 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
 
     private static decimal ParseRule(RuleValue rule)
         => decimal.Parse(rule.Value, CultureInfo.InvariantCulture);
+    
+    private void EnsureUserExists(string userId)
+    {
+        if (!db.Users.Any(u => u.UserId == userId))
+            throw new NotFoundException("User not found");
+    }
 }
