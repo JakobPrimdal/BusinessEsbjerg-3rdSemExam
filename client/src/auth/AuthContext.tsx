@@ -1,13 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { UserDTO } from "@/api/Api";
 import { api } from "@/api/client";
-import { clearToken, getToken, setToken } from "@/api/token";
 
 type Auth = {
   user: UserDTO | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<Auth | null>(null);
@@ -16,36 +15,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserDTO | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // On page load: if we have a token, ask the server who we are.
-  // An expired/invalid token gives 401, so we throw the token away.
+  // On page load we can't look for a token (the cookie is HttpOnly),
+  // so we always ask the server. 200 = logged in, 401 = not logged in.
   useEffect(() => {
-    if (!getToken()) {
-      setLoading(false);
-      return;
-    }
     api.auth
-      .authGetMe()
-      .then(res => setUser(res.data))
-      .catch(() => clearToken())
-      .finally(() => setLoading(false));
+        .authGetMe()
+        .then(res => setUser(res.data))
+        .catch(() => setUser(null))
+        .finally(() => setLoading(false));
   }, []);
 
   async function login(username: string, password: string) {
+    // Server sets the cookie and returns just the user
     const { data } = await api.auth.authLogin({ username, password });
-    if (!data.token || !data.user) throw new Error("Ugyldigt svar fra serveren");
-    setToken(data.token);
-    setUser(data.user);
+    setUser(data);
   }
 
-  function logout() {
-    clearToken();
-    setUser(null);
+  async function logout() {
+    // Ask the server to delete HttpOnly cookie
+    try {
+      await api.auth.authLogout();
+    } finally {
+      setUser(null);
+    }
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+      <AuthContext.Provider value={{ user, loading, login, logout }}>
+        {children}
+      </AuthContext.Provider>
   );
 }
 
