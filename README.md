@@ -8,6 +8,33 @@
 * .NET 10 SDK
 * Rest TBA
 
+## Security: Auth
+
+### How login works
+
+1. The client sends `POST /Login` with username and password.
+2. The server verifies the password (hashed) and creates a signed JWT token containing the user id, username and role. - Which expires after 2 hours.
+3. The server sends the JWT back in a `Set-Cookie` header named `jwt`. The response body only contains the user info, **never the token**.
+4. The browser automatically sends the cookie with every later request. The server reads and validates it (`JwtBearer` in `Program.cs`).
+5. `POST /Logout` makes the server delete the cookie. This must be done server-side, since JavaScript cannot touch an HttpOnly cookie.
+6. On page load the client calls `GET /GetMe` to find out whether the user is logged in.
+
+### HttpOnly, Secure, and SameSite
+
+| Measure           | Benefit                                                                              |
+|-------------------|--------------------------------------------------------------------------------------|
+| `HttpOnly`        | JavaScript cannot read the cookie, so an XSS attack cannot steal the token.          |
+| `Secure`          | The cookie is only sent over HTTPS, so it cannot be intercepted on the network.      |
+| `SameSite=Strict` | The cookie is only sent for requests from our own site, which protects against CSRF. |
+
+
+### Additional measures
+
+- **CORS** only allows the origins listed in `Cors:Origins`, with credentials enabled. The client must send requests with `credentials: "include"`.
+- **Passwords** are hashed, never stored in plain text.
+- **Role-based authorization** is enforced on the server with `[Authorize(Roles = "...")]`. The client-side route guards are only for user experience.
+
+
 ## Running backend locally
 
 1. You'll need to set a JWT secret in server/API (Any random string of at least 32 chars). 
