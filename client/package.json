@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "bun --hot src/index.ts",
     "build": "bun build ./src/index.html --outdir=dist --sourcemap --target=browser --minify --define:process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*'",
-    "start": "NODE_ENV=production bun src/index.ts"
+    "start": "NODE_ENV=production bun src/index.ts",
+    "generate-api": "swagger-typescript-api generate -p http://localhost:5194/swagger/v1/swagger.json -o ./src/api -n Api.ts --module-name-first-tag --type-only-imports"
   },
   "dependencies": {
     "bun-plugin-tailwind": "^0.1.2",
