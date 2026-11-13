@@ -66,7 +66,7 @@ public class AuthService (LoginDb db,TokenService tokenService,IPasswordHasher p
             return result;
         }
 
-        throw new ArgumentException("Unsupported user-role: " + role);
+        throw new BadRequestException("Unsupported user-role: " + role);
     }
 
     private UserDTO UserToUserDTO(User user)
