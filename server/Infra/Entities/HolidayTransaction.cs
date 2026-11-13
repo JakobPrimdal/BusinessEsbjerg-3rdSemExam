@@ -15,7 +15,7 @@ public class HolidayTransaction
 
     [Column("user_id")]
     [NotNull]
-    public Guid UserId { get; set; }
+    public string UserId { get; set; } = "";
 
     [Column("type")]
     [NotNull]
@@ -48,7 +48,7 @@ public class HolidayTransaction
     public string? Reason { get; set; }
 
     [Column("created_by")]
-    public Guid? CreatedBy { get; set; }
+    public string? CreatedBy { get; set; }
 
     [Column("created_at")]
     [NotNull]

@@ -22,7 +22,7 @@ public class RuleValue
     public DateOnly ValidFrom { get; set; }
 
     [Column("created_by")]
-    public Guid? CreatedBy { get; set; }
+    public string? CreatedBy { get; set; }
 
     [Column("created_at")]
     [NotNull]

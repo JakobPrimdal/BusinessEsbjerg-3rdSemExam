@@ -11,7 +11,7 @@ public class HolidayAccount
 
     [Column("user_id")]
     [NotNull]
-    public Guid UserId { get; set; }
+    public string UserId { get; set; } = "";
 
     [Column("holiday_type")]
     [NotNull]
@@ -43,5 +43,5 @@ public class HolidayAccount
 
     [Column("created_at")]
     [NotNull]
-    public DateTime CreatedAt { get; set; } 
+    public DateTime CreatedAt { get; set; }
 }

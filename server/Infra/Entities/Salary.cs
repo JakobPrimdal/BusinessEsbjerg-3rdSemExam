@@ -11,7 +11,7 @@ public class Salary
 
     [Column("user_id")]
     [NotNull]
-    public Guid UserId { get; set; }
+    public string UserId { get; set; } = "";
 
     [Column("valid_from")]
     [NotNull]
@@ -29,3 +29,4 @@ public class Salary
     [NotNull]
     public DateTime CreatedAt { get; set; }
 }
+
