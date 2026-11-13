@@ -30,5 +30,10 @@ The API runs on localhost:5194
 1. Build an image of the backend. 
 Use this command: `docker build -t business-esb-backend .`
 
-2. Run the image - remember your JWT secret, as well as the admin credentials. 
-Use this command: `docker run --rm --name business-esb-backend -p 127.0.0.1:4000:4000 -e Jwt__Secret="your-secret-here" -e Admin__Username="your-admin-username" -e Admin__Password="your-admin-password" business-esb-backend`
+2. Run the image - remember your JWT secret, admin credentials, and CORS settings. 
+Use this command: `docker run --rm --name business-esb-backend -p 127.0.0.1:4000:4000 \
+  -e Jwt__Secret="your-secret-here" \
+  -e Admin__Username="your-admin-username" \
+  -e Admin__Password="your-admin-password" \
+  -e Cors__Origins__0="https://your-client-domain.com" \
+  business-esb-backend`
