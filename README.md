@@ -70,3 +70,19 @@ Each test class targets one production class:
 
 #### Integration tests
 The integration tests are in the IntegrationTests project. They use xUnit together with Microsoft.AspNetCore.Mvc.Testing.
+
+
+## Continuous Integration
+
+A GitHub Actions workflow (pipeline-tests.yml) runs on every push and pull request to main.
+
+It has two independent jobs:
+* Frontend tests: installs dependencies with a frozen lockfile (bun install --frozen-lockfile) and runs bun test. 
+* Backend tests: restores, builds and runs dotnet test for the whole solution, which executes both the unit and integration tests.
+
+Because the pipeline runs on pull requests, a change that breaks an existing test is detected before it is merged.
+
+
+## Continuous Deployment
+
+* TBA
