@@ -55,14 +55,13 @@ This separation means that the business logic does not need to know how the data
 #### Dependency Injection
 * TBA
 
+
 ### Frontend Architecture
 
 
 ## Branching strategies
 
 * TBA
-
-
 ## Security: Auth
 
 ### How login works
