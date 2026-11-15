@@ -1,8 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Api;
+using Api.Jobs;
 using Api.Seed;
 using Infrastructure;
+using Infrastructure.Entities;
 using Infrastructure.Interfaces;
 using Infrastructure.Seed;
 using LinqToDB;
@@ -24,12 +26,21 @@ var userDbOptions = new DataOptions<LoginDb>(options);
 builder.Services.AddScoped<LoginDb>(_ => new LoginDb(userDbOptions));
 builder.Services.AddScoped<ILoginDb>(sp => sp.GetRequiredService<LoginDb>());
 
+var holidayDbOptions = new DataOptions<HolidayDb>(options);
+builder.Services.AddScoped<HolidayDb>(_ => new HolidayDb(holidayDbOptions));
+
+builder.Services.AddScoped<AuthService>();
+
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
 
 // Admin seeder
 builder.Services.AddScoped<AdminSeeder>();
+
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<HolidayService>();
+builder.Services.AddHostedService<MonthlyHolidayScheduler>();
 
 builder.Services.AddControllers();
 builder.Services.AddCors();
@@ -99,6 +110,28 @@ using (var scope = app.Services.CreateScope())
     // Seed initial admin user
     var adminSeeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
     await adminSeeder.SeedAsync();
+    
+    var holidayDb = scope.ServiceProvider.GetRequiredService<HolidayDb>();
+    holidayDb.CreateTable<RuleValue>(tableOptions: TableOptions.CreateIfNotExists);
+    holidayDb.CreateTable<WorkHour>(tableOptions: TableOptions.CreateIfNotExists);
+    holidayDb.CreateTable<Salary>(tableOptions: TableOptions.CreateIfNotExists);
+    holidayDb.CreateTable<HolidayAccount>(tableOptions: TableOptions.CreateIfNotExists);
+    holidayDb.CreateTable<HolidayTransaction>(tableOptions: TableOptions.CreateIfNotExists);
+ 
+    void SeedRule(string key, string value)
+    {
+        if (holidayDb.RuleValues.Any(r => r.Key == key)) return;
+        holidayDb.Insert(new RuleValue
+        {
+            Id = Guid.NewGuid(),
+            Key = key,
+            Value = value,
+            ValidFrom = new DateOnly(2020, 9, 1),
+            CreatedAt = DateTime.UtcNow
+        });
+    }
+    SeedRule(HolidayService.DaysPerMonthKey, "2.08");
+    SeedRule(HolidayService.Week6HoursPerMonthKey, "3.083");
 }
 
 // CORS
