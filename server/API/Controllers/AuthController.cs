@@ -2,12 +2,12 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
-using Service;
+using Service.Interfaces;
 using Service.DTOs;
 
 namespace Api.Controllers;
 
-public class AuthController(AuthService authService) : ControllerBase
+public class AuthController(IAuthService authService) : ControllerBase
 {
     [Authorize(Roles = "Admin")]
     [HttpPost(nameof(Register))]

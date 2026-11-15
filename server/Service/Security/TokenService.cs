@@ -3,11 +3,12 @@ using System.Text;
 using Infrastructure.Entities;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using Service.Interfaces;
 
 namespace Service.Security;
 public record JwtSettings(string Secret, string Issuer, string Audience);
 
-public class TokenService(JwtSettings settings)
+public class TokenService(JwtSettings settings) : ITokenService
 {
     public string CreateToken(User user)
     {

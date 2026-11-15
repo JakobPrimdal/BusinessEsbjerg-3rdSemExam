@@ -1,0 +1,20 @@
+using Infrastructure.Entities;
+using LinqToDB;
+
+namespace Infrastructure.Seed;
+
+public static class DbInitializer
+{
+    public static void LoginDbInitialize(LoginDb db)
+    {
+        db.CreateTable<User>(tableOptions: TableOptions.CreateIfNotExists);
+        db.CreateTable<Role>(tableOptions: TableOptions.CreateIfNotExists);
+
+        foreach (var role in Enum.GetValues<UserRole>())
+        {
+            var roleId = (int)role;
+            if (!db.Roles.Any(r => r.Id == roleId))
+                db.Insert(new Role { Id = roleId, Name = role.ToString() });
+        }
+    }
+}

@@ -5,12 +5,15 @@ using Api.Jobs;
 using Api.Seed;
 using Infrastructure;
 using Infrastructure.Entities;
+using Infrastructure.Interfaces;
+using Infrastructure.Seed;
 using LinqToDB;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using NSwag;
 using NSwag.Generation.Processors.Security;
 using Service;
+using Service.Interfaces;
 using Service.Security;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +24,7 @@ var options = new DataOptions().UseSQLite(connectionString);
 
 var userDbOptions = new DataOptions<LoginDb>(options);
 builder.Services.AddScoped<LoginDb>(_ => new LoginDb(userDbOptions));
+builder.Services.AddScoped<ILoginDb>(sp => sp.GetRequiredService<LoginDb>());
 
 var holidayDbOptions = new DataOptions<HolidayDb>(options);
 builder.Services.AddScoped<HolidayDb>(_ => new HolidayDb(holidayDbOptions));
@@ -28,6 +32,8 @@ builder.Services.AddScoped<HolidayDb>(_ => new HolidayDb(holidayDbOptions));
 builder.Services.AddScoped<AuthService>();
 
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddSingleton<ITokenService, TokenService>();
 
 // Admin seeder
 builder.Services.AddScoped<AdminSeeder>();
@@ -99,30 +105,11 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<LoginDb>();
-    db.CreateTable<User>(tableOptions: TableOptions.CreateIfNotExists);
-    db.CreateTable<Role>(tableOptions: TableOptions.CreateIfNotExists);
-
-    // Seed roles
-    foreach (var role in Enum.GetValues<UserRole>())
-    {
-        var roleId = (int)role;
-
-        var exists = db.Roles.Any(r => r.Id == roleId);
-
-        if (!exists)
-        {
-            db.Insert(new Role
-            {
-                Id = roleId,
-                Name = role.ToString()
-            });
-        }
-
-    }
+    DbInitializer.LoginDbInitialize(db);
     
     // Seed initial admin user
     var adminSeeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
-    adminSeeder.Seed();
+    await adminSeeder.SeedAsync();
     
     var holidayDb = scope.ServiceProvider.GetRequiredService<HolidayDb>();
     holidayDb.CreateTable<RuleValue>(tableOptions: TableOptions.CreateIfNotExists);

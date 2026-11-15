@@ -1,14 +1,12 @@
-using Infrastructure;
 using Infrastructure.Entities;
-using LinqToDB;
-using LinqToDB.Async;
+using Infrastructure.Interfaces;
 using Service.DTOs;
 using Service.Exceptions;
-using Service.Security;
+using Service.Interfaces;
 
 namespace Service;
 
-public class AuthService (LoginDb db,TokenService tokenService,IPasswordHasher passwordHasher)   
+public class AuthService (ILoginDb db,ITokenService tokenService,IPasswordHasher passwordHasher) : IAuthService
 {
     public async Task<UserDTO> Register(RegisterRequestDTO dto)
     {
@@ -23,37 +21,36 @@ public class AuthService (LoginDb db,TokenService tokenService,IPasswordHasher p
         if (password.Length < 7)
             throw new BadRequestException("Password must be at least 7 characters");
         
-        if (await db.Users.AnyAsync(u => u.Username == username))
+        if (await db.UsernameExistsAsync(dto.Username.Trim()))
             throw new BadRequestException("Username is already taken");
 
         //  Build the entity
         var user = new User
         {
             UserId = Guid.NewGuid().ToString(),             
-            Username = username,
+            Username = dto.Username.Trim(),
             PasswordHash = passwordHasher.HashAndSaltPassword(password),
             Role = RoleToEnum(dto.Role),
             IsActive = true
         };
 
         // save user
-        await db.InsertAsync(user);
+        await db.AddUserAsync(user);
         
         return UserToUserDTO(user);
     }
     public async Task<LoginResponseDTO> Login(LoginRequestDTO dto)
     {
-        var username = (dto.Username ?? "").Trim().ToLowerInvariant();
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Username == username);
+        var user = await db.GetUserByUsernameAsync(dto.Username.Trim());
         
-        if (user is null || !passwordHasher.VerifyHashedPassword(dto.Password ?? "", user.PasswordHash))
+        if (user is null || !user.IsActive || !passwordHasher.VerifyHashedPassword(dto.Password ?? "", user.PasswordHash))
             throw new UnauthorizedException("Invalid username or password");
         
         return new LoginResponseDTO(tokenService.CreateToken(user), UserToUserDTO(user));
     }
     public async Task<UserDTO> GetUser(string userId)
     {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.UserId == userId)
+        var user = await db.GetUserByIdAsync(userId)
                    ?? throw new NotFoundException("User not found");
         
         return UserToUserDTO(user);
@@ -61,7 +58,7 @@ public class AuthService (LoginDb db,TokenService tokenService,IPasswordHasher p
     
     private UserRole RoleToEnum(string role)
     {
-        if (Enum.TryParse<UserRole>(role, ignoreCase: true, out var result))
+        if (Enum.TryParse<UserRole>(role, ignoreCase: true, out var result) && Enum.IsDefined(result))
         {
             return result;
         }
