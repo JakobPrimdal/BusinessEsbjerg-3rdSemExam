@@ -1,19 +1,17 @@
-using System.Security.Cryptography;
-using Infrastructure;
 using Infrastructure.Entities;
-using LinqToDB;
-using Service.Security;
+using Infrastructure.Interfaces;
+using Service.Interfaces;
 
 namespace Api.Seed;
 
 public class AdminSeeder(
-    LoginDb db,
+    ILoginDb db,
     IPasswordHasher passwordHasher,
     IConfiguration configuration)
 {
-    public void Seed()
+    public async Task SeedAsync()
     {
-        var username = configuration["Admin:Username"];
+        var username = configuration["Admin:Username"]?.Trim().ToLowerInvariant();
         var password = configuration["Admin:Password"];
 
         if (string.IsNullOrWhiteSpace(username) ||
@@ -23,24 +21,14 @@ public class AdminSeeder(
                 "Admin credentials are missing from configuration.");
         }
 
-        // Check if admin already exists
-        if (db.Users.Any(u => u.Username == username))
+        if (await db.UsernameExistsAsync(username))
             return;
 
-        // Generate a unique salt for hashing
-        var salt = Convert.ToBase64String(
-            RandomNumberGenerator.GetBytes(16));
-
-        // Hash password
-        var passwordHash = passwordHasher.HashPassword(
-            password, salt);
-
-        // Insert admin
-        db.InsertAsync(new User
+        await db.AddUserAsync(new User
         {
             UserId = Guid.NewGuid().ToString(),
             Username = username,
-            PasswordHash = passwordHash,
+            PasswordHash = passwordHasher.HashAndSaltPassword(password),
             Role = UserRole.Admin,
             IsActive = true
         });

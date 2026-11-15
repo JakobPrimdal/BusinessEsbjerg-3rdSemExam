@@ -4,12 +4,14 @@ using Api;
 using Api.Seed;
 using Infrastructure;
 using Infrastructure.Entities;
+using Infrastructure.Interfaces;
 using LinqToDB;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using NSwag;
 using NSwag.Generation.Processors.Security;
 using Service;
+using Service.Interfaces;
 using Service.Security;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,10 +22,11 @@ var options = new DataOptions().UseSQLite(connectionString);
 
 var userDbOptions = new DataOptions<LoginDb>(options);
 builder.Services.AddScoped<LoginDb>(_ => new LoginDb(userDbOptions));
-
-builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<ILoginDb>(sp => sp.GetRequiredService<LoginDb>());
 
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddSingleton<ITokenService, TokenService>();
 
 // Admin seeder
 builder.Services.AddScoped<AdminSeeder>();
@@ -114,7 +117,7 @@ using (var scope = app.Services.CreateScope())
     
     // Seed initial admin user
     var adminSeeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
-    adminSeeder.Seed();
+    await adminSeeder.SeedAsync();
 }
 
 // CORS
