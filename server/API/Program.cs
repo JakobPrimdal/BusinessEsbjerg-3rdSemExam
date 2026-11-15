@@ -95,8 +95,6 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<LoginDb>();
     DbInitializer.LoginDbInitialize(db);
-
-    await scope.ServiceProvider.GetRequiredService<AdminSeeder>().SeedAsync();
     
     // Seed initial admin user
     var adminSeeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
