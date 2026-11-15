@@ -11,7 +11,7 @@ public class AdminSeeder(
 {
     public async Task SeedAsync()
     {
-        var username = configuration["Admin:Username"]?.Trim().ToLowerInvariant();
+        var username = configuration["Admin:Username"]?.Trim();
         var password = configuration["Admin:Password"];
 
         if (string.IsNullOrWhiteSpace(username) ||

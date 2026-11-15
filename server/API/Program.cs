@@ -3,8 +3,8 @@ using System.Text;
 using Api;
 using Api.Seed;
 using Infrastructure;
-using Infrastructure.Entities;
 using Infrastructure.Interfaces;
+using Infrastructure.Seed;
 using LinqToDB;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -94,26 +94,9 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<LoginDb>();
-    db.CreateTable<User>(tableOptions: TableOptions.CreateIfNotExists);
-    db.CreateTable<Role>(tableOptions: TableOptions.CreateIfNotExists);
+    DbInitializer.LoginDbInitialize(db);
 
-    // Seed roles
-    foreach (var role in Enum.GetValues<UserRole>())
-    {
-        var roleId = (int)role;
-
-        var exists = db.Roles.Any(r => r.Id == roleId);
-
-        if (!exists)
-        {
-            db.Insert(new Role
-            {
-                Id = roleId,
-                Name = role.ToString()
-            });
-        }
-
-    }
+    await scope.ServiceProvider.GetRequiredService<AdminSeeder>().SeedAsync();
     
     // Seed initial admin user
     var adminSeeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
