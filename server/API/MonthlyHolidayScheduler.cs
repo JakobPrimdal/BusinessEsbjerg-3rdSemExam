@@ -17,7 +17,7 @@ public class MonthlyHolidayScheduler(
                 var holidayService = scope.ServiceProvider.GetRequiredService<HolidayService>();
 
                 var today = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
-                var lastMonth = HolidayService.FirstDayOfMonth(today).AddMonths(-1);
+                var lastMonth = HolidayService.PreviousMonth(today);
 
                 var count = holidayService.AddMonthlyHolidayForAll(lastMonth);
                 logger.LogInformation("Monthly holiday for {Month}: added for {Count} user(s)", lastMonth, count);

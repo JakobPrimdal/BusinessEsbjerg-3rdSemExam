@@ -147,7 +147,8 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
         => new(date.Month >= 9 ? date.Year : date.Year - 1, 9, 1);
 
     public static DateOnly FirstDayOfMonth(DateOnly date) => new(date.Year, date.Month, 1);
-
+    public static DateOnly PreviousMonth(DateOnly today) => FirstDayOfMonth(today).AddMonths(-1);
+    
     public static HolidayAccount NewAccountFor(string holidayType, string userId, DateOnly month)
     {
         if (holidayType == Week6)
