@@ -179,9 +179,8 @@ Beyond the happy path, the tests deliberately cover:
 Tests follow the method_scenario_expectedResult naming convention, so a failing test name explains what broke. Data-driven tests ([Theory] with [InlineData] or [MemberData]) cover many input combinations without duplicating test code. 
 TestPasswordHasher uses the real Argon2 implementation rather than a mock, because the point of those tests is the cryptographic behavior. 
 Since each hash is deliberately slow, that class is kept small.
-Logic that was hard to test (the date calculation inside the MonthlyHolidayScheduler background job)
-was moved into a small static method (HolidayService.PreviousMonth) so it can be unit tested,
-while the job itself is covered by integration tests.
+Logic that was hard to test (the date calculation inside the MonthlyHolidayScheduler background job) was moved into a small static method (HolidayService.PreviousMonth) 
+so it can be unit tested, while the monthly holiday logic the job runs (HolidayService.AddMonthlyHolidayForAll) is covered.
 On the client side, tests are written with Bun’s built-in test runner (bun:test).
 
 #### Unit tests

@@ -42,28 +42,19 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
     public bool AddMonthlyHoliday(string userId, DateOnly anyDayInMonth)
     {
         var month = FirstDayOfMonth(anyDayInMonth);
-        var lastDay = month.AddMonths(1).AddDays(-1);
 
-        var schedule = db.WorkHours
-            .Where(w => w.UserId == userId && w.ValidFrom <= lastDay)
-            .OrderByDescending(w => w.ValidFrom)
-            .FirstOrDefault();
-        if (schedule is null)
-            return false;
+        var earning = CalculateMonth(userId, month);
+        if (earning is null)
+            return false; // did not work at all this month (not started yet, or stopped)
 
-        var weeklyHours = WeeklyHours(schedule);
-
-        var weeks1To5Rule = FindRule(DaysPerMonthKey, month)
-            ?? throw new InvalidOperationException($"No rule '{DaysPerMonthKey}' for {month}");
-        var addedWeeks1To5 = AddEarned(userId, month, Weeks1To5, weeklyHours, weeks1To5Rule,
-            CalculateWeeks1To5Hours(weeklyHours, ParseRule(weeks1To5Rule)));
+        var addedWeeks1To5 = AddEarned(userId, month, Weeks1To5, earning.WeeklyHours,
+            earning.Weeks1To5Rule, earning.Weeks1To5Hours);
 
         var addedWeek6 = false;
-        var week6Rule = FindRule(Week6HoursPerMonthKey, month);
-        if (week6Rule != null)
+        if (earning.Week6Rule != null)
         {
-            addedWeek6 = AddEarned(userId, month, Week6, weeklyHours, week6Rule,
-                CalculateWeek6Hours(weeklyHours, ParseRule(week6Rule)));
+            addedWeek6 = AddEarned(userId, month, Week6, earning.WeeklyHours,
+                earning.Week6Rule, earning.Week6Hours);
         }
 
         return addedWeeks1To5 || addedWeek6;
@@ -148,6 +139,38 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
 
     public static DateOnly FirstDayOfMonth(DateOnly date) => new(date.Year, date.Month, 1);
     public static DateOnly PreviousMonth(DateOnly today) => FirstDayOfMonth(today).AddMonths(-1);
+
+    // One work schedule and how many calendar days of a month it covers
+    public record SchedulePeriod(decimal WeeklyHours, int Days);
+
+    // Splits a month into the periods each work schedule covers
+    // Days before the first schedule  are not included
+    // A schedule with 0 hours gives a period with 0 weekly hours
+    public static List<SchedulePeriod> DaysPerSchedule(IReadOnlyList<WorkHour> schedules, DateOnly month)
+    {
+        var firstDay = FirstDayOfMonth(month);
+        var lastDay = firstDay.AddMonths(1).AddDays(-1);
+        var periods = new List<SchedulePeriod>();
+
+        for (var i = 0; i < schedules.Count; i++)
+        {
+            // A schedule is valid from its ValidFrom until the day before the next schedule starts
+            var validFrom = schedules[i].ValidFrom;
+            var validTo = i + 1 < schedules.Count ? schedules[i + 1].ValidFrom.AddDays(-1) : DateOnly.MaxValue;
+
+            var start = validFrom > firstDay ? validFrom : firstDay;
+            var end = validTo < lastDay ? validTo : lastDay;
+            if (end < start)
+                continue; // this schedule is not valid in this month
+
+            periods.Add(new SchedulePeriod(WeeklyHours(schedules[i]), end.DayNumber - start.DayNumber + 1));
+        }
+        return periods;
+    }
+
+    // The share of a full month's holiday you get for 'daysWorked' out of 'daysInMonth' calendar days
+    public static decimal ProRate(decimal fullMonthHours, int daysWorked, int daysInMonth)
+        => Math.Round(fullMonthHours * daysWorked / daysInMonth, 4, MidpointRounding.AwayFromZero);
     
     public static HolidayAccount NewAccountFor(string holidayType, string userId, DateOnly month)
     {
@@ -226,6 +249,50 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
         template.CreatedAt = clock.GetUtcNow().UtcDateTime;
         db.Insert(template);
         return template;
+    }
+
+    // What a user earns in one month, before it is saved
+    private record MonthEarning(
+        decimal WeeklyHours,
+        RuleValue Weeks1To5Rule,
+        decimal Weeks1To5Hours,
+        RuleValue? Week6Rule,
+        decimal Week6Hours);
+
+    // Calculates the holiday for one month. Each work schedule counts for the calendar days it covers,
+    // so starting, stopping or changing hours in the middle of a month earns only for those days.
+    private MonthEarning? CalculateMonth(string userId, DateOnly month)
+    {
+        var lastDay = month.AddMonths(1).AddDays(-1);
+        var schedules = db.WorkHours
+            .Where(w => w.UserId == userId && w.ValidFrom <= lastDay)
+            .OrderBy(w => w.ValidFrom)
+            .ThenBy(w => w.CreatedAt)
+            .ToList();
+
+        var periods = DaysPerSchedule(schedules, month);
+        if (periods.Sum(p => p.WeeklyHours * p.Days) == 0)
+            return null;
+
+        var weeks1To5Rule = FindRule(DaysPerMonthKey, month)
+            ?? throw new InvalidOperationException($"No rule '{DaysPerMonthKey}' for {month}");
+        var week6Rule = FindRule(Week6HoursPerMonthKey, month);
+        var daysInMonth = DateTime.DaysInMonth(month.Year, month.Month);
+
+        decimal weeks1To5Hours = 0;
+        decimal week6Hours = 0;
+        foreach (var period in periods)
+        {
+            weeks1To5Hours += ProRate(CalculateWeeks1To5Hours(period.WeeklyHours, ParseRule(weeks1To5Rule)),
+                period.Days, daysInMonth);
+
+            if (week6Rule != null)
+                week6Hours += ProRate(CalculateWeek6Hours(period.WeeklyHours, ParseRule(week6Rule)),
+                    period.Days, daysInMonth);
+        }
+
+        // Weekly hours saved on the transaction: the schedule in force at the end of the month
+        return new MonthEarning(WeeklyHours(schedules[^1]), weeks1To5Rule, weeks1To5Hours, week6Rule, week6Hours);
     }
 
     private RuleValue? FindRule(string key, DateOnly month)
