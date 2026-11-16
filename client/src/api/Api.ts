@@ -19,8 +19,13 @@ export enum UserRole {
 export interface UserDTO {
   userId?: string;
   username?: string;
-  role?: UserRole;
+  role?: RoleDTO;
   isActive?: boolean;
+}
+
+export interface RoleDTO {
+  id?: UserRole;
+  name?: string;
 }
 
 export interface RegisterRequestDTO {
@@ -32,6 +37,64 @@ export interface RegisterRequestDTO {
 export interface LoginRequestDTO {
   username?: string;
   password?: string;
+}
+
+export interface HolidayBalanceDTO {
+  userId?: string;
+  /** @format decimal */
+  weeks1To5Hours?: number;
+  /** @format decimal */
+  week6Hours?: number;
+  accounts?: HolidayAccountDTO[];
+}
+
+export interface HolidayAccountDTO {
+  /** @format guid */
+  id?: string;
+  holidayType?: string;
+  /** @format date */
+  earningStart?: string;
+  /** @format date */
+  earningEnd?: string;
+  /** @format date */
+  usageStart?: string;
+  /** @format date */
+  usageEnd?: string;
+  /** @format date */
+  transferDeadline?: string;
+  status?: string;
+  /** @format decimal */
+  balanceHours?: number;
+  months?: MonthlyHolidayDTO[];
+}
+
+export interface MonthlyHolidayDTO {
+  /** @format date */
+  month?: string;
+  /** @format decimal */
+  hours?: number;
+  /** @format decimal */
+  weeklyHours?: number | null;
+}
+
+export interface CreateWorkHourDTO {
+  userId?: string;
+  /** @format date */
+  validFrom?: string;
+  /** @format decimal */
+  monHours?: number;
+  /** @format decimal */
+  tueHours?: number;
+  /** @format decimal */
+  wedHours?: number;
+  /** @format decimal */
+  thuHours?: number;
+  /** @format decimal */
+  friHours?: number;
+  /** @format decimal */
+  satHours?: number;
+  /** @format decimal */
+  sunHours?: number;
 }
 
 export type QueryParamsType = Record<string | number, any>;
@@ -379,6 +442,85 @@ export class Api<
         method: "GET",
         secure: true,
         format: "json",
+        ...params,
+      }),
+  };
+  holiday = {
+    /**
+     * No description
+     *
+     * @tags Holiday
+     * @name HolidayGetMyBalance
+     * @request GET:/holiday/GetMyBalance
+     * @secure
+     */
+    holidayGetMyBalance: (params: RequestParams = {}) =>
+      this.request<HolidayBalanceDTO, any>({
+        path: `/holiday/GetMyBalance`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Holiday
+     * @name HolidayGetBalance
+     * @request GET:/holiday/GetBalance/{userId}
+     * @secure
+     */
+    holidayGetBalance: (userId: string, params: RequestParams = {}) =>
+      this.request<HolidayBalanceDTO, any>({
+        path: `/holiday/GetBalance/${userId}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Holiday
+     * @name HolidayAddWorkHours
+     * @request POST:/holiday/AddWorkHours
+     * @secure
+     */
+    holidayAddWorkHours: (
+      data: CreateWorkHourDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<Blob, any>({
+        path: `/holiday/AddWorkHours`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Holiday
+     * @name HolidayAddMonth
+     * @request POST:/holiday/AddMonth
+     * @secure
+     */
+    holidayAddMonth: (
+      query?: {
+        /** @format date */
+        month?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<Blob, any>({
+        path: `/holiday/AddMonth`,
+        method: "POST",
+        query: query,
+        secure: true,
         ...params,
       }),
   };
