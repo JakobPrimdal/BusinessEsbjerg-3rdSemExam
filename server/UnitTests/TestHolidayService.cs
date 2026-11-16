@@ -51,7 +51,7 @@ public class TestHolidayService
         Assert.Equal(1.5415m, result);
     }
 
-    // Weekly hours from 
+    // Weekly hours  
 
     [Fact]
     public void WeeklyHours_FiveDaysOf7Point4Hours_Returns37()
