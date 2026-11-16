@@ -5,8 +5,8 @@ import { AuthProvider } from "@/auth/AuthContext";
 import { RequireRole } from "@/auth/RequireRole";
 import { Header } from "@/components/Header";
 import { CreateUserPage } from "@/pages/CreateUserPage";
-import { HomePage } from "@/pages/HomePage";
 import { LoginPage } from "@/pages/LoginPage";
+import { MyBalancePage } from "@/pages/MyBalancePage";
 
 export function App() {
   return (
@@ -21,7 +21,7 @@ export function App() {
                 path="/hjem"
                 element={
                   <RequireRole>
-                    <HomePage />
+                    <MyBalancePage />
                   </RequireRole>
                 }
               />
