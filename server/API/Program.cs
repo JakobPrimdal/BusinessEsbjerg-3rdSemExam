@@ -37,6 +37,7 @@ builder.Services.AddSingleton<ITokenService, TokenService>();
 
 // Admin seeder
 builder.Services.AddScoped<AdminSeeder>();
+builder.Services.AddScoped<DemoDataSeeder>();
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<HolidayService>();
@@ -132,6 +133,14 @@ using (var scope = app.Services.CreateScope())
     }
     SeedRule(HolidayService.DaysPerMonthKey, "2.08");
     SeedRule(HolidayService.Week6HoursPerMonthKey, "3.083");
+
+    // Development only: demo employee with holiday data (login: employee / password).
+    // Never runs in production, so these credentials are not in the cloud database.
+    if (app.Environment.IsDevelopment())
+    {
+        var demoSeeder = scope.ServiceProvider.GetRequiredService<DemoDataSeeder>();
+        await demoSeeder.SeedAsync();
+    }
 }
 
 // CORS
