@@ -45,7 +45,7 @@ public class TestAuthService
             u.IsActive));
 
         Assert.Equal("alice", result.Username);
-        Assert.Equal(UserRole.Accountant, result.Role);
+        Assert.Equal(UserRole.Accountant, result.Role.Id);
         Assert.True(result.IsActive);
         Assert.False(string.IsNullOrEmpty(result.UserId));
     }
@@ -104,8 +104,8 @@ public class TestAuthService
     public async Task Register_ParsesRoleCaseInsensitively(string role, UserRole expected)
     {
         var result = await _sut.Register(new RegisterRequestDTO("alice", "password123", role));
-
-        Assert.Equal(expected, result.Role);
+        
+        Assert.Equal(expected, result.Role.Id);
     }
 
     [Theory]
@@ -189,7 +189,7 @@ public class TestAuthService
 
         Assert.Equal("user-1", result.UserId);
         Assert.Equal("alice", result.Username);
-        Assert.Equal(UserRole.User, result.Role);
+        Assert.Equal(UserRole.User, result.Role.Id);
     }
 
     [Fact]
