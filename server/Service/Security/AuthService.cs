@@ -72,7 +72,11 @@ public class AuthService (ILoginDb db,ITokenService tokenService,IPasswordHasher
         {
             UserId = user.UserId,
             Username = user.Username,
-            Role = user.Role,
+            Role =
+            {
+                Id = user.Role,
+                Name = user.Role.ToString()
+            },
             IsActive = user.IsActive
         };
     }

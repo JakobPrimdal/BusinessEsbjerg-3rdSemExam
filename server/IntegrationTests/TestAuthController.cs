@@ -83,7 +83,7 @@ public class TestAuthController(WebApplicationFactory<Program> factory) : IClass
         // Assert: correct user returned
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(AdminUsername, user!.Username);
-        Assert.Equal(UserRole.Admin, user.Role);
+        Assert.Equal(UserRole.Admin, user.Role.Id);
 
         // Assert: the token travels in an HttpOnly + Secure + SameSite=Strict cookie, not in the body
         Assert.True(response.Headers.TryGetValues("Set-Cookie", out var cookies));
@@ -128,7 +128,7 @@ public class TestAuthController(WebApplicationFactory<Program> factory) : IClass
         // Assert: user was created
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(username, created!.Username);
-        Assert.Equal(UserRole.Accountant, created.Role);
+        Assert.Equal(UserRole.Accountant, created.Role.Id);
         Assert.True(created.IsActive);
 
         // Act & Assert: the new user can log in - proves it was saved and the password was hashed correctly
@@ -185,7 +185,7 @@ public class TestAuthController(WebApplicationFactory<Program> factory) : IClass
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(username, me!.Username);
-        Assert.Equal(UserRole.Accountant, me.Role);
+        Assert.Equal(UserRole.Accountant, me.Role.Id);
     }
 
     // POST /Logout tests
