@@ -18,6 +18,13 @@ public class HolidayRequestService(HolidayDb db, HolidayService holidayService, 
     public const string NegativeAtYearEndError = "Saldoen må ikke være negativ den 31. august";
     private const int MaxRequestDays = 366;
     
+    private const int MainHolidayMinWorkingDays = 10;
+    
+    
+    // Used if the notice rules are missing in the database 
+    private const int DefaultMainHolidayNoticeMonths = 3;
+    private const int DefaultOtherHolidayNoticeMonths = 1;
+    
     public record RequestCost(int WorkingDays, decimal Hours);
     
     public static RequestCost CalculateCost(
@@ -67,9 +74,16 @@ public class HolidayRequestService(HolidayDb db, HolidayService holidayService, 
             HoursOn(schedule, DayOfWeek.Monday) + HoursOn(schedule, DayOfWeek.Tuesday) +
             HoursOn(schedule, DayOfWeek.Wednesday) + HoursOn(schedule, DayOfWeek.Thursday) +
             HoursOn(schedule, DayOfWeek.Friday));
-
-    // ---------- Using the database ----------
-
+    
+    // Main holiday has a longer notice period (3 months) than other holiday (1 month)
+    public static bool IsMainHoliday(string holidayType, DateOnly start, int workingDays)
+        => holidayType == HolidayService.Weeks1To5
+           && start.Month is >= 5 and <= 9
+           && workingDays >= MainHolidayMinWorkingDays;
+    
+    public static bool IsShortNotice(DateOnly today, DateOnly start, int noticeMonths)
+        => start < today.AddMonths(noticeMonths);
+    
     // shows the cost and the balance, and whether the request is allowed. Saves nothing
     public HolidayRequestPreviewDTO Preview(string userId, CreateHolidayRequestDTO dto)
     {
@@ -110,11 +124,12 @@ public class HolidayRequestService(HolidayDb db, HolidayService holidayService, 
         return new HolidayRequestDTO(request.Id, request.HolidayType, request.StartDate, request.EndDate,
             request.Hours, request.Status, request.CreatedAt);
     }
-
+ 
     private record CheckResult(
-        RequestCost Cost, decimal BalanceBefore, decimal BalanceAfter, decimal MaxDebt, string? Error);
-    
-    private CheckResult Check(string userId, CreateHolidayRequestDTO dto)
+        RequestCost Cost, decimal BalanceBefore, decimal BalanceAfter, decimal MaxDebt, string? Error,
+        bool ShortNotice, int NoticeMonths);
+
+       private CheckResult Check(string userId, CreateHolidayRequestDTO dto)
     {
         if (dto.HolidayType is not (HolidayService.Weeks1To5 or HolidayService.Week6))
             throw new BadRequestException(UnknownTypeError);
@@ -145,7 +160,7 @@ public class HolidayRequestService(HolidayDb db, HolidayService holidayService, 
         if (overlaps)
             throw new BadRequestException(OverlapError);
         
-        //  the balance on the start date may max one week negative
+        //  the balance on the start date may be at most one week negative
         var balanceBefore = holidayService.ProjectedBalance(userId, dto.HolidayType, dto.StartDate);
         var balanceAfter = HolidayService.RoundHours(balanceBefore - cost.Hours);
 
@@ -159,14 +174,28 @@ public class HolidayRequestService(HolidayDb db, HolidayService holidayService, 
         }
         else
         {
-            //  the balance  may not be negative
+            //  balance at the end of 31 August may not be negative.
+            //   everything earned until the end of August,
+            //   minus all holiday planned before 1 September, including this request
             var endOfYear = HolidayService.EndOfHolidayYear(dto.StartDate);
             var atEndOfYear = holidayService.ProjectedBalance(userId, dto.HolidayType, endOfYear.AddDays(1),
                 notSavedYet: new HolidayService.PlannedUse(dto.StartDate, cost.Hours));
             if (atEndOfYear < 0)
                 error = NegativeAtYearEndError;
         }
+        
+        //  notice rules in start today when the request is made
+        var noticeMonths = IsMainHoliday(dto.HolidayType, dto.StartDate, cost.WorkingDays)
+            ? NoticeMonths(HolidayService.NoticeMainHolidayMonthsKey, today, DefaultMainHolidayNoticeMonths)
+            : NoticeMonths(HolidayService.NoticeOtherHolidayMonthsKey, today, DefaultOtherHolidayNoticeMonths);
+        var shortNotice = IsShortNotice(today, dto.StartDate, noticeMonths);
 
-        return new CheckResult(cost, balanceBefore, balanceAfter, maxDebt, error);
+        return new CheckResult(cost, balanceBefore, balanceAfter, maxDebt, error, shortNotice, noticeMonths);
+    }
+       
+    private int NoticeMonths(string ruleKey, DateOnly today, int defaultMonths)
+    {
+        var rule = holidayService.RuleValueOn(ruleKey, today);
+        return rule is null ? defaultMonths : (int)rule.Value;
     }
 }

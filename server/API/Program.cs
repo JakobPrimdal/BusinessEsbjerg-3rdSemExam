@@ -31,6 +31,8 @@ builder.Services.AddScoped<HolidayDb>(_ => new HolidayDb(holidayDbOptions));
 
 builder.Services.AddScoped<AuthService>();
 
+builder.Services.AddScoped<HolidayRequestService>();
+
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
@@ -133,6 +135,9 @@ using (var scope = app.Services.CreateScope())
     }
     SeedRule(HolidayService.DaysPerMonthKey, "2.08");
     SeedRule(HolidayService.Week6HoursPerMonthKey, "3.083");
+    
+    SeedRule(HolidayService.NoticeMainHolidayMonthsKey, "3");
+    SeedRule(HolidayService.NoticeOtherHolidayMonthsKey, "1");
 
     // Development only: demo employee with holiday data (login: employee / password).
     // Never runs in production, so these credentials are not in the cloud database.

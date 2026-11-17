@@ -17,6 +17,10 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
     public const string DaysPerMonthKey = "weeks_1_5_days_per_month";
     public const string Week6HoursPerMonthKey = "week_6_hours_per_month";
 
+    // Notice periods for holiday requests
+    public const string NoticeMainHolidayMonthsKey = "notice_main_holiday_months";
+    public const string NoticeOtherHolidayMonthsKey = "notice_other_holiday_months";
+
     private const decimal FullTimeWeeklyHours = 37m;
     
     public const int HourDecimals = 2;
@@ -438,6 +442,12 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
         return new MonthEarning(WeeklyHours(schedules[^1]), weeks1To5Rule, weeks1To5Hours, week6Rule, week6Hours);
     }
 
+    public decimal? RuleValueOn(string key, DateOnly date)
+    {
+        var rule = FindRule(key, date);
+        return rule is null ? null : ParseRule(rule);
+    } 
+    
     private RuleValue? FindRule(string key, DateOnly month)
         => db.RuleValues
             .Where(r => r.Key == key && r.ValidFrom <= month)
