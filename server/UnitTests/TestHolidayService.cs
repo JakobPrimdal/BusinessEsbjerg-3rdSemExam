@@ -3,14 +3,11 @@ using Service;
 
 namespace UnitTests;
 
-    // Unit tests for the holiday rules in HolidayService
 public class TestHolidayService
 {
-    // How many hours of holiday (weeks 1-5) you earn per month 
-    // Rule: 2.08 days per month
-
+  
     [Fact]
-    public void CalculateWeeks1To5Hours_FullTime37Hours_Returns15Point392()
+    public void CalculateWeeks1To5Hours_FullTime37Hours_Returns15Point39()
     {
         // Arrange
         decimal weeklyHours = 37m;
@@ -19,8 +16,8 @@ public class TestHolidayService
         // Act
         decimal result = HolidayService.CalculateWeeks1To5Hours(weeklyHours, daysPerMonth);
 
-        // Assert: 2.08 * 37 / 5 = 15.392
-        Assert.Equal(15.392m, result);
+        // Assert: 2.08 * 37 / 5 = 15.392, rounded to 15.39
+        Assert.Equal(15.39m, result);
     }
 
     [Fact]
@@ -39,7 +36,8 @@ public class TestHolidayService
     {
         decimal result = HolidayService.CalculateWeek6Hours(37m, 3.083m);
 
-        Assert.Equal(3.083m, result);
+        // 3.083 rounded to 3.08
+        Assert.Equal(3.08m, result);
     }
 
     [Fact]
@@ -47,8 +45,8 @@ public class TestHolidayService
     {
         decimal result = HolidayService.CalculateWeek6Hours(18.5m, 3.083m);
 
-        // 3.083 / 2 = 1.5415
-        Assert.Equal(1.5415m, result);
+        // 3.083 / 2 = 1.5415, rounded to 1.54
+        Assert.Equal(1.54m, result);
     }
 
     // Weekly hours  
@@ -87,5 +85,92 @@ public class TestHolidayService
         DateOnly result = HolidayService.PreviousMonth(new DateOnly(2026, 1, 10));
 
         Assert.Equal(new DateOnly(2025, 12, 1), result);
+    }
+    
+    public static TheoryData<decimal, decimal> RoundHoursCases => new()
+    {
+        { 15.392m, 15.39m }, // rounds down
+        { 2.346m, 2.35m },   // rounds up
+        { 1.005m, 1.01m },   // exactly in the middle 
+        { 7m, 7m }
+    };
+
+    [Theory]
+    [MemberData(nameof(RoundHoursCases))]
+    public void RoundHours_KeepsTwoDecimals(decimal hours, decimal expected)
+    {
+        Assert.Equal(expected, HolidayService.RoundHours(hours));
+    }
+    
+    private static WorkHour Schedule(DateOnly validFrom, decimal hoursPerDay) => new()
+    {
+        ValidFrom = validFrom,
+        MonHours = hoursPerDay, TueHours = hoursPerDay, WedHours = hoursPerDay,
+        ThuHours = hoursPerDay, FriHours = hoursPerDay
+    };
+
+    [Fact]
+    public void DaysPerSchedule_ScheduleFromBeforeTheMonth_CoversWholeMonth()
+    {
+        // Arrange: full time since January
+        var schedules = new List<WorkHour> { Schedule(new DateOnly(2026, 1, 1), 7.4m) };
+
+        // Act
+        var periods = HolidayService.DaysPerSchedule(schedules, new DateOnly(2026, 3, 1));
+
+        // Assert: all 31 days of March
+        Assert.Equal(new[] { new HolidayService.SchedulePeriod(37m, 31) }, periods);
+    }
+
+    [Fact]
+    public void DaysPerSchedule_StartedOn20March_CountsOnly12Days()
+    {
+        var schedules = new List<WorkHour> { Schedule(new DateOnly(2026, 3, 20), 7.4m) };
+
+        var periods = HolidayService.DaysPerSchedule(schedules, new DateOnly(2026, 3, 1));
+
+        // 20-31 March = 12 days
+        Assert.Equal(new[] { new HolidayService.SchedulePeriod(37m, 12) }, periods);
+    }
+
+    [Fact]
+    public void DaysPerSchedule_HoursChangedOn16March_SplitsTheMonth()
+    {
+        // Arrange: full time, then half time from 16 March
+        var schedules = new List<WorkHour>
+        {
+            Schedule(new DateOnly(2026, 1, 1), 7.4m),
+            Schedule(new DateOnly(2026, 3, 16), 3.7m)
+        };
+
+        // Act
+        var periods = HolidayService.DaysPerSchedule(schedules, new DateOnly(2026, 3, 1));
+
+        // Assert: 1-15 March full time, 16-31 March half time
+        Assert.Equal(
+            new[] { new HolidayService.SchedulePeriod(37m, 15), new HolidayService.SchedulePeriod(18.5m, 16) },
+            periods);
+    }
+
+    [Fact]
+    public void DaysPerSchedule_StartsNextMonth_ReturnsNoPeriods()
+    {
+        var schedules = new List<WorkHour> { Schedule(new DateOnly(2026, 4, 1), 7.4m) };
+
+        var periods = HolidayService.DaysPerSchedule(schedules, new DateOnly(2026, 3, 1));
+
+        Assert.Empty(periods);
+    }
+
+    [Theory]
+    [InlineData(31, 31, 10)]   // whole month -everything
+    [InlineData(15, 30, 5)]    // half the month - half
+    [InlineData(10, 31, 3.23)] // 10 * 10 / 31 = 3.2258 - rounded to 2 decimals
+    [InlineData(0, 31, 0)]     // no days -nothing
+    public void ProRate_ReturnsShareOfTheMonth(int daysWorked, int daysInMonth, double expected)
+    {
+        decimal result = HolidayService.ProRate(10m, daysWorked, daysInMonth);
+
+        Assert.Equal((decimal)expected, result);
     }
 }
