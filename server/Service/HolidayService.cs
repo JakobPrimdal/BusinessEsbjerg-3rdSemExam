@@ -19,7 +19,10 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
 
     private const decimal FullTimeWeeklyHours = 37m;
 
-    // All holiday hours are kept with 2 decimals (Business Esbjerg, 16 November)
+    // Holiday can be used long after it was earned: a week-6 month earned in January of year Y
+    // can be used until 30 April Y+2 (28 months later).
+    private const int MonthsToLookBack = 30;
+    
     public const int HourDecimals = 2;
 
     public static decimal RoundHours(decimal hours)
@@ -64,6 +67,66 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
         }
 
         return addedWeeks1To5 || addedWeek6;
+    }
+
+    // Calculates how much holiday is available on a given date
+    // after earned holiday and planned holiday are taken into account.
+    public decimal ProjectedBalance(string userId, string holidayType, DateOnly date)
+    {
+        var lastEarnedMonth = PreviousMonth(date); // a month's holiday is earned when the month is over
+        decimal earned = 0;
+        DateOnly? firstUsageStart = null;
+
+        for (var month = lastEarnedMonth.AddMonths(-MonthsToLookBack); month <= lastEarnedMonth; month = month.AddMonths(1))
+        {
+            var account = NewAccountFor(holidayType, userId, month);
+            if (account.UsageStart > date || account.UsageEnd < date)
+                continue; // holiday from this month cannot be used on 'date' (not yet, or expired)
+
+            earned += EarnedHoursForMonth(userId, holidayType, month);
+            if (firstUsageStart is null || account.UsageStart < firstUsageStart)
+                firstUsageStart = account.UsageStart;
+        }
+
+        if (firstUsageStart is null)
+            return 0; // nothing of this type can be used on 'date'
+
+        // Holiday planned in the same usage period, before 'date'
+        var planned = db.HolidayRequests
+            .Where(r => r.UserId == userId
+                        && r.HolidayType == holidayType
+                        && HolidayRequestStatus.Active.Contains(r.Status)
+                        && r.StartDate >= firstUsageStart.Value
+                        && r.StartDate < date)
+            .Select(r => r.Hours)
+            .ToList()
+            .Sum();
+
+        return RoundHours(earned - planned);
+    }
+
+    // Holiday of one type earned in one month:
+    // - a month the monthly job has already added: the saved hours (never recalculated, so a later
+    //   rule change can not change holiday that is already earned)
+    // - a month not added yet: calculated with the work schedules and rules known today
+    public decimal EarnedHoursForMonth(string userId, string holidayType, DateOnly anyDayInMonth)
+    {
+        var month = FirstDayOfMonth(anyDayInMonth);
+
+        var saved = (from t in db.HolidayTransactions
+                     join a in db.HolidayAccounts on t.HolidayAccountId equals a.Id
+                     where t.UserId == userId
+                           && t.Type == EarnedType
+                           && t.PeriodMonth == month
+                           && a.HolidayType == holidayType
+                     select t.Hours).ToList();
+        if (saved.Count > 0)
+            return saved.Sum();
+
+        var earning = CalculateMonth(userId, month);
+        if (earning is null)
+            return 0; // not working that month
+        return holidayType == Week6 ? earning.Week6Hours : earning.Weeks1To5Hours;
     }
 
     public HolidayBalanceDTO GetBalance(string userId)
@@ -151,7 +214,7 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
 
     // Splits a month into the periods each work schedule covers.
     // Days before the first schedule (not started yet) are not included.
-    // A schedule with 0 hours gives a period with 0 weekly hours.
+    // A schedule with 0 hours  gives a period with 0 weekly hours.
     public static List<SchedulePeriod> DaysPerSchedule(IReadOnlyList<WorkHour> schedules, DateOnly month)
     {
         var firstDay = FirstDayOfMonth(month);
@@ -174,7 +237,7 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
         return periods;
     }
 
-    // The share of a full month holiday you get for daysWorked out of daysInMonth calendar days
+    // The share of a full month's holiday you get for 'daysWorked' out of 'daysInMonth' calendar days
     public static decimal ProRate(decimal fullMonthHours, int daysWorked, int daysInMonth)
         => RoundHours(fullMonthHours * daysWorked / daysInMonth);
     
