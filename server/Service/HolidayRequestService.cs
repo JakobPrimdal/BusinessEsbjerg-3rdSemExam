@@ -91,13 +91,24 @@ public class HolidayRequestService(HolidayDb db, HolidayService holidayService, 
         {
             var check = Check(userId, dto);
             return new HolidayRequestPreviewDTO(
-                check.Cost.WorkingDays, check.Cost.Hours, check.BalanceBefore, check.BalanceAfter,
-                check.MaxDebt, CanRequest: check.Error is null, check.Error);
+                check.Cost.WorkingDays,
+                check.Cost.Hours,
+                check.BalanceBefore,
+                check.BalanceAfter,
+                check.MaxDebt,
+                CanRequest: check.Error is null,
+                check.Error,
+                check.ShortNotice,
+                check.NoticeMonths);
         }
         catch (BadRequestException ex)
         {
-            return new HolidayRequestPreviewDTO(0, 0, 0, 0, 0, CanRequest: false, ex.Message);
-        }
+            return new HolidayRequestPreviewDTO(
+                0, 0, 0, 0, 0,
+                CanRequest: false,
+                ex.Message,
+                ShortNotice: false,
+                NoticeMonths: 0);}
     }
 
     // Saves the request as pending, after the same checks as the preview
@@ -121,8 +132,16 @@ public class HolidayRequestService(HolidayDb db, HolidayService holidayService, 
         };
         db.Insert(request);
 
-        return new HolidayRequestDTO(request.Id, request.HolidayType, request.StartDate, request.EndDate,
-            request.Hours, request.Status, request.CreatedAt);
+        return new HolidayRequestDTO(
+            request.Id,
+            request.HolidayType,
+            request.StartDate,
+            request.EndDate,
+            request.Hours,
+            request.Status,
+            request.CreatedAt,
+            check.ShortNotice,
+            check.NoticeMonths);
     }
  
     private record CheckResult(
