@@ -17,7 +17,16 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
     public const string DaysPerMonthKey = "weeks_1_5_days_per_month";
     public const string Week6HoursPerMonthKey = "week_6_hours_per_month";
 
+    // Notice periods for holiday requests
+    public const string NoticeMainHolidayMonthsKey = "notice_main_holiday_months";
+    public const string NoticeOtherHolidayMonthsKey = "notice_other_holiday_months";
+
     private const decimal FullTimeWeeklyHours = 37m;
+    
+    public const int HourDecimals = 2;
+
+    public static decimal RoundHours(decimal hours)
+        => Math.Round(hours, HourDecimals, MidpointRounding.AwayFromZero);
 
     public int AddMonthlyHolidayForAll(DateOnly anyDayInMonth)
     {
@@ -58,6 +67,86 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
         }
 
         return addedWeeks1To5 || addedWeek6;
+    }
+    
+    public decimal ProjectedBalance(string userId, string holidayType, DateOnly date, PlannedUse? notSavedYet = null)
+    {
+        var earned = EarnedLots(userId, holidayType, date);
+
+        var planned = db.HolidayRequests
+            .Where(r => r.UserId == userId
+                        && r.HolidayType == holidayType
+                        && HolidayRequestStatus.Active.Contains(r.Status)
+                        && r.StartDate < date)
+            .Select(r => new { r.StartDate, r.Hours })
+            .ToList()
+            .Select(r => new PlannedUse(r.StartDate, r.Hours))
+            .ToList();
+        if (notSavedYet != null)
+            planned.Add(notSavedYet);
+
+        return CalculateBalance(earned, planned, date);
+    }
+    
+    public decimal EarnedHoursForMonth(string userId, string holidayType, DateOnly anyDayInMonth)
+    {
+        var month = FirstDayOfMonth(anyDayInMonth);
+        return SavedAccruals(userId, holidayType).TryGetValue(month, out var saved)
+            ? saved
+            : CalculatedHoursForMonth(userId, holidayType, month);
+    }
+
+    // One lot per month the employee has worked, for months whose holiday is usable on or before 'date'
+    private List<EarnedLot> EarnedLots(string userId, string holidayType, DateOnly date)
+    {
+        var firstSchedule = db.WorkHours
+            .Where(w => w.UserId == userId)
+            .OrderBy(w => w.ValidFrom)
+            .FirstOrDefault();
+        if (firstSchedule is null)
+            return [];
+
+        var saved = SavedAccruals(userId, holidayType);
+        var lots = new List<EarnedLot>();
+
+        for (var month = FirstDayOfMonth(firstSchedule.ValidFrom); month <= PreviousMonth(date); month = month.AddMonths(1))
+        {
+            var account = NewAccountFor(holidayType, userId, month);
+
+            // Earned when the month is over, but not usable before the account's usage period starts
+            // week 6: 1 May the year after
+            var monthOver = month.AddMonths(1);
+            var usableFrom = monthOver > account.UsageStart ? monthOver : account.UsageStart;
+            if (usableFrom > date)
+                continue;
+
+            var hours = saved.TryGetValue(month, out var savedHours)
+                ? savedHours
+                : CalculatedHoursForMonth(userId, holidayType, month);
+            if (hours > 0)
+                lots.Add(new EarnedLot(usableFrom, account.UsageEnd, hours));
+        }
+        return lots;
+    }
+
+    private Dictionary<DateOnly, decimal> SavedAccruals(string userId, string holidayType)
+        => (from t in db.HolidayTransactions
+            join a in db.HolidayAccounts on t.HolidayAccountId equals a.Id
+            where t.UserId == userId
+                  && t.Type == EarnedType
+                  && t.PeriodMonth != null
+                  && a.HolidayType == holidayType
+            select new { Month = t.PeriodMonth!.Value, t.Hours })
+            .ToList()
+            .GroupBy(x => x.Month)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Hours));
+
+    private decimal CalculatedHoursForMonth(string userId, string holidayType, DateOnly month)
+    {
+        var earning = CalculateMonth(userId, month);
+        if (earning is null)
+            return 0; // not working that month
+        return holidayType == Week6 ? earning.Week6Hours : earning.Weeks1To5Hours;
     }
 
     public HolidayBalanceDTO GetBalance(string userId)
@@ -126,10 +215,10 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
     }
 
     public static decimal CalculateWeeks1To5Hours(decimal weeklyHours, decimal daysPerMonth)
-        => Math.Round(daysPerMonth * weeklyHours / 5m, 4, MidpointRounding.AwayFromZero);
+        => RoundHours(daysPerMonth * weeklyHours / 5m);
 
     public static decimal CalculateWeek6Hours(decimal weeklyHours, decimal fullTimeHoursPerMonth)
-        => Math.Round(fullTimeHoursPerMonth * weeklyHours / FullTimeWeeklyHours, 4, MidpointRounding.AwayFromZero);
+        => RoundHours(fullTimeHoursPerMonth * weeklyHours / FullTimeWeeklyHours);
 
     public static decimal WeeklyHours(WorkHour w)
         => w.MonHours + w.TueHours + w.WedHours + w.ThuHours + w.FriHours + w.SatHours + w.SunHours;
@@ -139,13 +228,72 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
 
     public static DateOnly FirstDayOfMonth(DateOnly date) => new(date.Year, date.Month, 1);
     public static DateOnly PreviousMonth(DateOnly today) => FirstDayOfMonth(today).AddMonths(-1);
+    
+    public static DateOnly EndOfHolidayYear(DateOnly date)
+        => HolidayYearStart(date).AddYears(1).AddDays(-1);
+    
+    public record EarnedLot(DateOnly UsableFrom, DateOnly UsableTo, decimal Hours);
+
+    // Holiday that is planned (pending or approved) and uses hours from the day it starts
+    public record PlannedUse(DateOnly StartDate, decimal Hours);
+    
+    private sealed class OpenLot(DateOnly usableTo, decimal hours)
+    {
+        public DateOnly UsableTo { get; } = usableTo;
+        public decimal Hours { get; set; } = hours;
+    }
+    public static decimal CalculateBalance(
+        IEnumerable<EarnedLot> earned, IEnumerable<PlannedUse> planned, DateOnly date)
+    {
+        var events = earned
+            .Where(l => l.UsableFrom <= date)
+            .Select(l => (Date: l.UsableFrom, Order: 0, Lot: l, Use: (PlannedUse?)null))
+            .Concat(planned
+                .Where(p => p.StartDate < date)
+                .Select(p => (Date: p.StartDate, Order: 1, Lot: (EarnedLot?)null, Use: (PlannedUse?)p)))
+            .OrderBy(e => e.Date)
+            .ThenBy(e => e.Order);
+
+        var open = new List<OpenLot>();
+        decimal debt = 0;
+
+        foreach (var e in events)
+        {
+            open.RemoveAll(l => l.UsableTo < e.Date); // expired
+
+            if (e.Lot != null)
+            {
+                var payBack = Math.Min(debt, e.Lot.Hours);
+                debt -= payBack;
+                if (e.Lot.Hours - payBack > 0)
+                    open.Add(new OpenLot(e.Lot.UsableTo, e.Lot.Hours - payBack));
+            }
+            else
+            {
+                var needed = e.Use!.Hours;
+                foreach (var lot in open.OrderBy(l => l.UsableTo))
+                {
+                    var take = Math.Min(needed, lot.Hours);
+                    lot.Hours -= take;
+                    needed -= take;
+                    if (needed == 0)
+                        break;
+                }
+                open.RemoveAll(l => l.Hours == 0);
+                debt += needed;
+            }
+        }
+
+        open.RemoveAll(l => l.UsableTo < date);
+        return RoundHours(open.Sum(l => l.Hours) - debt);
+    }
 
     // One work schedule and how many calendar days of a month it covers
     public record SchedulePeriod(decimal WeeklyHours, int Days);
 
-    // Splits a month into the periods each work schedule covers
-    // Days before the first schedule  are not included
-    // A schedule with 0 hours gives a period with 0 weekly hours
+    // Splits a month into the periods each work schedule covers.
+    // Days before the first schedule (not started yet) are not included.
+    // A schedule with 0 hours gives a period with 0 weekly hours.
     public static List<SchedulePeriod> DaysPerSchedule(IReadOnlyList<WorkHour> schedules, DateOnly month)
     {
         var firstDay = FirstDayOfMonth(month);
@@ -167,10 +315,9 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
         }
         return periods;
     }
-
-    // The share of a full month's holiday you get for 'daysWorked' out of 'daysInMonth' calendar days
+    
     public static decimal ProRate(decimal fullMonthHours, int daysWorked, int daysInMonth)
-        => Math.Round(fullMonthHours * daysWorked / daysInMonth, 4, MidpointRounding.AwayFromZero);
+        => RoundHours(fullMonthHours * daysWorked / daysInMonth);
     
     public static HolidayAccount NewAccountFor(string holidayType, string userId, DateOnly month)
     {
@@ -291,10 +438,16 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
                     period.Days, daysInMonth);
         }
 
-        // Weekly hours saved on the transaction: the schedule in force at the end of the month
+        // Weekly hours saved on the transaction, the schedule in force at the end of the month
         return new MonthEarning(WeeklyHours(schedules[^1]), weeks1To5Rule, weeks1To5Hours, week6Rule, week6Hours);
     }
 
+    public decimal? RuleValueOn(string key, DateOnly date)
+    {
+        var rule = FindRule(key, date);
+        return rule is null ? null : ParseRule(rule);
+    } 
+    
     private RuleValue? FindRule(string key, DateOnly month)
         => db.RuleValues
             .Where(r => r.Key == key && r.ValidFrom <= month)
