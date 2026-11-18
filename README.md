@@ -17,6 +17,7 @@ Each layer has a distinct responsibility, helping separate concerns and keep the
 
 #### Layers and Responsibilities 
 1. API Layer 
+
 The API layer is the entry point to the application. It handles incoming HTTP requests and communicates with the Service layer. 
 Responsibilities: 
 Exposes REST endpoints through controllers. Handles HTTP-specific concerns such as routing, authentication and authorization. 
@@ -25,6 +26,7 @@ The API layer should contain as little business logic as possible. Its primary r
 
 
 2. Service Layer 
+
 The Service layer contains the application's business logic and rules. It processes requests received from the API layer and coordinates the operations required to fulfil them. 
 Responsibilities: 
 Implements business logic and validation. Handles authentication and user-related operations. Manages password hashing and JWT token generation. 
@@ -33,6 +35,7 @@ Defines service contracts and other interfaces. For example, AuthService handles
 
 
 3. Infrastructure Layer (Infra) 
+
 The Infrastructure layer handles communication with external resources, primarily the database. 
 Responsibilities: 
 Defines database entities and their mappings. Manages database connections through LinqToDB. Implements database operations such as creating, retrieving and inserting (CRUD) users. 
