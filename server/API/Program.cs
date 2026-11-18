@@ -29,11 +29,13 @@ builder.Services.AddScoped<ILoginDb>(sp => sp.GetRequiredService<LoginDb>());
 var holidayDbOptions = new DataOptions<HolidayDb>(options);
 builder.Services.AddScoped<HolidayDb>(_ => new HolidayDb(holidayDbOptions));
 
+builder.Services.AddScoped<HolidayService>();
 builder.Services.AddScoped<AuthService>();
 
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
+builder.Services.AddScoped<IHolidayRuleSet, HolidayRuleSetService>();
 
 // Admin seeder
 builder.Services.AddScoped<AdminSeeder>();
@@ -105,19 +107,23 @@ var app = builder.Build();
 // Create DB + tables
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<LoginDb>();
-    DbInitializer.LoginDbInitialize(db);
+    var loginDb = scope.ServiceProvider.GetRequiredService<LoginDb>();
+    DbInitializer.LoginDbInitialize(loginDb);
+    
+    var holidayDb = scope.ServiceProvider.GetRequiredService<HolidayDb>();
+    DbInitializer.HolidayRuleSetDbInitialize(holidayDb, scope.ServiceProvider.GetRequiredService<TimeProvider>());
     
     // Seed initial admin user
     var adminSeeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
     await adminSeeder.SeedAsync();
     
-    var holidayDb = scope.ServiceProvider.GetRequiredService<HolidayDb>();
+    
     holidayDb.CreateTable<RuleValue>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<WorkHour>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<Salary>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayAccount>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayTransaction>(tableOptions: TableOptions.CreateIfNotExists);
+    holidayDb.CreateTable<HolidayRuleSet>(tableOptions: TableOptions.CreateIfNotExists);
  
     void SeedRule(string key, string value)
     {
