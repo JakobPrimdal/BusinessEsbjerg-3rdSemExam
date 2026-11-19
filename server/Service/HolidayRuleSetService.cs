@@ -1,43 +1,56 @@
 using Infrastructure;
 using Infrastructure.Entities;
 using LinqToDB;
+using LinqToDB.Internal.Common;
+using Service.DTOs;
 using Service.Exceptions;
 using Service.Interfaces;
 
 namespace Service;
 
-public class HolidayRuleSetService(HolidayDb db, TimeProvider clock) : IHolidayRuleSet
+public class HolidayRuleSetService(HolidayDb db, TimeProvider clock) : IHolidayRuleSetService
 {
-    public HolidayRuleSet? GetRulesForDate(DateOnly date)
+    public IReadOnlyList<HolidayRuleSetDTOs.HolidayRuleSetResponseDTO> GetAllRuleSets()
     {
-        return db.HolidayRuleSets
+        List<HolidayRuleSet> ruleSets = db.HolidayRuleSets.OrderByDescending(r => r.ValidFrom).ToList();
+
+        if (ruleSets.IsNullOrEmpty())
+            throw new NotFoundException("No HolidayRuleSets exists.");
+        
+        return ruleSets.Select(HolidayRuleSetDTOs.MapToResponseDTO).ToList().AsReadOnly();
+    }
+    
+    public HolidayRuleSetDTOs.HolidayRuleSetResponseDTO? GetRulesForDate(DateOnly date)
+    {
+        if (date.IsNullValue)
+            throw new BadRequestException("No date was specified.");
+        
+        var  ruleSet = db.HolidayRuleSets
             .Where(r => r.ValidFrom <= date)
             .OrderByDescending(r => r.ValidFrom)
             .FirstOrDefault();
+
+        if (ruleSet == null)
+            throw new NotFoundException("RuleSet for the specified date doesn't exist.");
+
+        return HolidayRuleSetDTOs.MapToResponseDTO(ruleSet);
     }
 
-    public HolidayRuleSet? GetCurrentRules()
+    public HolidayRuleSetDTOs.HolidayRuleSetResponseDTO? GetCurrentRuleSet()
     {
         var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
 
         return GetRulesForDate(today);
     }
-
-    public IReadOnlyList<HolidayRuleSet> GetAllRules()
+    
+    public HolidayRuleSetDTOs.HolidayRuleSetResponseDTO CreateVersion(HolidayRuleSetDTOs.HolidayRuleSetRequestDTO ruleSetDTO, string createdBy)
     {
-        return db.HolidayRuleSets
-            .OrderByDescending(r => r.ValidFrom)
-            .ToList();
-    }
-
-    public HolidayRuleSet CreateVersion(HolidayRuleSet ruleSet, string createdBy)
-    {
-        if (ruleSet is null)
+        if (ruleSetDTO == null)
             throw new BadRequestException("Rule set is required.");
-
         if (string.IsNullOrWhiteSpace(createdBy))
             throw new BadRequestException("CreatedBy is required.");
 
+        HolidayRuleSet ruleSet = HolidayRuleSetDTOs.MapToEntity(ruleSetDTO);
         ValidateRuleSet(ruleSet);
 
         // Get the latest existing version.
@@ -49,7 +62,7 @@ public class HolidayRuleSetService(HolidayDb db, TimeProvider clock) : IHolidayR
         if (latestVersion != null &&
             ruleSet.ValidFrom <= latestVersion.ValidFrom)
         {
-            throw new BadRequestException("ValidFrom must be later than the latest version: " + latestVersion.ValidFrom + ".");
+            throw new BadRequestException("ValidFrom must be later than the latest version. You cannot have two rulesets valid at the same time.");
         }
 
         // Never reuse metadata supplied by the caller.
@@ -59,7 +72,7 @@ public class HolidayRuleSetService(HolidayDb db, TimeProvider clock) : IHolidayR
 
         db.Insert(ruleSet);
 
-        return ruleSet;
+        return HolidayRuleSetDTOs.MapToResponseDTO(ruleSet);
     }
 
     private static void ValidateRuleSet(HolidayRuleSet ruleSet)

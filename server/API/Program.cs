@@ -35,7 +35,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
-builder.Services.AddScoped<IHolidayRuleSet, HolidayRuleSetService>();
+builder.Services.AddScoped<IHolidayRuleSetService, HolidayRuleSetService>();
 
 // Admin seeder
 builder.Services.AddScoped<AdminSeeder>();
