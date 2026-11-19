@@ -16,7 +16,9 @@ public class HolidayRuleSet
 
     [Column, NotNull]
     public DateTime CreatedAt { get; set; }
-
+    
+    [Column, NotNull]
+    public bool IsActive { get; set; }
 
     
     // Earning rates

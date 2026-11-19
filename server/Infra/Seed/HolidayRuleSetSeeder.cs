@@ -17,6 +17,7 @@ public static class HolidayRuleSetSeeder
             ValidFrom = new DateOnly(2020, 9, 1),
             CreatedAt = clock.GetUtcNow().UtcDateTime,
             CreatedBy = null,
+            IsActive = true,
 
             // Earning rates
             Weeks1To5EarningRate = 2.08m,

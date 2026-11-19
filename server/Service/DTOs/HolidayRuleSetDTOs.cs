@@ -8,6 +8,7 @@ public class HolidayRuleSetDTOs
     public class HolidayRuleSetRequestDTO
     {
         public DateOnly ValidFrom { get; set; }
+        public bool IsActive { get; set; }
 
         // Earning rates
         public decimal Weeks1To5EarningRate { get; set; }
@@ -72,6 +73,7 @@ public class HolidayRuleSetDTOs
         public DateOnly ValidFrom { get; set; }
         public string? CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
+        public bool IsActive { get; set; }
 
         // Earning rates
         public decimal Weeks1To5EarningRate { get; set; }
@@ -134,6 +136,7 @@ public class HolidayRuleSetDTOs
         return new HolidayRuleSet
         {
             ValidFrom = dto.ValidFrom,
+            IsActive = dto.IsActive,
 
             // Earning rates
             Weeks1To5EarningRate = dto.Weeks1To5EarningRate,
@@ -200,6 +203,7 @@ public class HolidayRuleSetDTOs
             ValidFrom = ruleSet.ValidFrom,
             CreatedBy = ruleSet.CreatedBy,
             CreatedAt = ruleSet.CreatedAt,
+            IsActive = ruleSet.IsActive,
 
             // Earning rates
             Weeks1To5EarningRate = ruleSet.Weeks1To5EarningRate,
