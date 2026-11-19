@@ -32,6 +32,7 @@ builder.Services.AddScoped<HolidayDb>(_ => new HolidayDb(holidayDbOptions));
 builder.Services.AddScoped<AuthService>();
 
 builder.Services.AddScoped<HolidayRequestService>();
+builder.Services.AddScoped<HolidayDecisionService>();
 
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -121,6 +122,7 @@ using (var scope = app.Services.CreateScope())
     holidayDb.CreateTable<HolidayAccount>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayTransaction>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayRequest>(tableOptions: TableOptions.CreateIfNotExists);
+    SchemaUpgrade.Run(holidayDb);
     void SeedRule(string key, string value)
     {
         if (holidayDb.RuleValues.Any(r => r.Key == key)) return;
