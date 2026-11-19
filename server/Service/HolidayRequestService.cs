@@ -161,11 +161,7 @@ public class HolidayRequestService(HolidayDb db, HolidayService holidayService, 
         if (dto.EndDate.DayNumber - dto.StartDate.DayNumber + 1 > MaxRequestDays)
             throw new BadRequestException(TooLongError);
         
-        var schedules = db.WorkHours
-            .Where(w => w.UserId == userId)
-            .OrderBy(w => w.ValidFrom)
-            .ThenBy(w => w.CreatedAt)
-            .ToList();
+        var schedules = SchedulesFor(userId);
         
         var cost = CalculateCost(dto.StartDate, dto.EndDate, schedules);
         if (cost.Hours == 0)
@@ -179,39 +175,51 @@ public class HolidayRequestService(HolidayDb db, HolidayService holidayService, 
         if (overlaps)
             throw new BadRequestException(OverlapError);
         
-        //  the balance on the start date may be at most one week negative
-        var balanceBefore = holidayService.ProjectedBalance(userId, dto.HolidayType, dto.StartDate);
-        var balanceAfter = HolidayService.RoundHours(balanceBefore - cost.Hours);
+        // the holiday rules: at most one week of debt, and not negative on 31 August
+        var rules = CheckHolidayRules(userId, dto.HolidayType, dto.StartDate, cost.Hours, schedules);
 
-        var scheduleAtStart = ScheduleOn(schedules, dto.StartDate) ?? schedules[0];
-        var maxDebt = WeekHours(scheduleAtStart);
-
-        string? error = null;
-        if (balanceAfter < -maxDebt)
-        {
-            error = DebtLimitError;
-        }
-        else
-        {
-            //  balance at the end of 31 August may not be negative.
-            //   everything earned until the end of August,
-            //   minus all holiday planned before 1 September, including this request
-            var endOfYear = HolidayService.EndOfHolidayYear(dto.StartDate);
-            var atEndOfYear = holidayService.ProjectedBalance(userId, dto.HolidayType, endOfYear.AddDays(1),
-                notSavedYet: new HolidayService.PlannedUse(dto.StartDate, cost.Hours));
-            if (atEndOfYear < 0)
-                error = NegativeAtYearEndError;
-        }
-        
         //  notice rules in start today when the request is made
         var noticeMonths = IsMainHoliday(dto.HolidayType, dto.StartDate, cost.WorkingDays)
             ? NoticeMonths(HolidayService.NoticeMainHolidayMonthsKey, today, DefaultMainHolidayNoticeMonths)
             : NoticeMonths(HolidayService.NoticeOtherHolidayMonthsKey, today, DefaultOtherHolidayNoticeMonths);
         var shortNotice = IsShortNotice(today, dto.StartDate, noticeMonths);
 
-        return new CheckResult(cost, balanceBefore, balanceAfter, maxDebt, error, shortNotice, noticeMonths);
+        return new CheckResult(cost, rules.BalanceBefore, rules.BalanceAfter, rules.MaxDebt, rules.Error,
+            shortNotice, noticeMonths);
     }
        
+    public record RuleCheck(decimal BalanceBefore, decimal BalanceAfter, decimal MaxDebt, string? Error);
+
+    
+    public RuleCheck CheckHolidayRules(string userId, string holidayType, DateOnly start, decimal hours,
+        IReadOnlyList<WorkHour> schedules, Guid? existingRequestId = null)
+    {
+        var balanceBefore = holidayService.ProjectedBalance(userId, holidayType, start, leaveOut: existingRequestId);
+        var balanceAfter = HolidayService.RoundHours(balanceBefore - hours);
+
+        var scheduleAtStart = ScheduleOn(schedules, start) ?? schedules[0];
+        var maxDebt = WeekHours(scheduleAtStart);
+
+        if (balanceAfter < -maxDebt)
+            return new RuleCheck(balanceBefore, balanceAfter, maxDebt, DebtLimitError);
+
+        var endOfYear = HolidayService.EndOfHolidayYear(start);
+        var atEndOfYear = holidayService.ProjectedBalance(userId, holidayType, endOfYear.AddDays(1),
+            notSavedYet: new HolidayService.PlannedUse(start, hours), leaveOut: existingRequestId);
+        if (atEndOfYear < 0)
+            return new RuleCheck(balanceBefore, balanceAfter, maxDebt, NegativeAtYearEndError);
+
+        return new RuleCheck(balanceBefore, balanceAfter, maxDebt, null);
+    }
+
+    // employee's work schedules, oldest first
+    public List<WorkHour> SchedulesFor(string userId)
+        => db.WorkHours
+            .Where(w => w.UserId == userId)
+            .OrderBy(w => w.ValidFrom)
+            .ThenBy(w => w.CreatedAt)
+            .ToList();
+
     private int NoticeMonths(string ruleKey, DateOnly today, int defaultMonths)
     {
         var rule = holidayService.RuleValueOn(ruleKey, today);

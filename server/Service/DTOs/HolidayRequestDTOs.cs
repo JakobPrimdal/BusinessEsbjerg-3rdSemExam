@@ -27,3 +27,25 @@ public record HolidayRequestDTO(
     DateTime CreatedAt,
     bool ShortNotice,
     int NoticeMonths);
+
+public record PendingHolidayRequestDTO(
+    Guid Id,
+    string UserId,
+    string Username,
+    string HolidayType,
+    DateOnly StartDate,
+    DateOnly EndDate,
+    decimal Hours,
+    DateTime CreatedAt,
+    decimal BalanceBefore,  
+    decimal BalanceAfter,   
+    string? Problem);      
+
+public record DenyHolidayRequestDTO(string? Reason);
+
+public record HolidayDecisionDTO(
+    Guid Id,
+    string Status,
+    string DecidedBy,
+    DateTime DecidedAt,
+    string? DecisionReason);

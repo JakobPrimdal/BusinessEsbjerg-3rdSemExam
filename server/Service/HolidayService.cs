@@ -9,7 +9,10 @@ namespace Service;
 
 public class HolidayService(HolidayDb db, TimeProvider clock)
 {
-    public const string EarnedType = "earned";
+    // Ledger line types (holiday_transaction.type)
+    public const string EarnedType = "earned";     // + holiday earned in a month (the monthly job)
+    public const string UsageType = "usage";       // - holiday taken: written when a request is approved
+    public const string ReversalType = "reversal"; // + undoes a usage line (cancelled approved holiday, later)
 
     public const string Weeks1To5 = "weeks_1_5";
     public const string Week6 = "week_6";
@@ -69,24 +72,81 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
         return addedWeeks1To5 || addedWeek6;
     }
     
-    public decimal ProjectedBalance(string userId, string holidayType, DateOnly date, PlannedUse? notSavedYet = null)
+    // 'leaveOut' is a saved request that must not be counted, because it is the one being checked
+    // (the accountant approving a pending request: it is added as 'notSavedYet' instead).
+    public decimal ProjectedBalance(string userId, string holidayType, DateOnly date,
+        PlannedUse? notSavedYet = null, Guid? leaveOut = null)
     {
         var earned = EarnedLots(userId, holidayType, date);
 
-        var planned = db.HolidayRequests
+        // Approved holiday comes from the ledger (usage lines), pending holiday from the requests.
+        // A request is in one of the two, never both, so nothing is counted twice.
+        var planned = ApprovedUses(userId, holidayType);
+        planned.AddRange(db.HolidayRequests
             .Where(r => r.UserId == userId
                         && r.HolidayType == holidayType
-                        && HolidayRequestStatus.Active.Contains(r.Status)
+                        && r.Status == HolidayRequestStatus.Pending
                         && r.StartDate < date)
-            .Select(r => new { r.StartDate, r.Hours })
+            .Select(r => new { r.Id, r.StartDate, r.Hours })
             .ToList()
-            .Select(r => new PlannedUse(r.StartDate, r.Hours))
-            .ToList();
+            .Where(r => r.Id != leaveOut)
+            .Select(r => new PlannedUse(r.StartDate, r.Hours)));
         if (notSavedYet != null)
             planned.Add(notSavedYet);
 
         return CalculateBalance(earned, planned, date);
     }
+
+    public void RecordUsage(HolidayRequest request, string decidedBy)
+    {
+        // Lots up to 14 months ahead, to find the account that pays back debt
+        // (week 6: the next 1 May; weeks 1-5: the next month)
+        var earned = EarnedLots(request.UserId, request.HolidayType, request.StartDate.AddMonths(14));
+
+        var debtAccount = earned
+            .Where(l => l.UsableFrom > request.StartDate)
+            .OrderBy(l => l.UsableFrom)
+            .Select(l => (DateOnly?)l.AccountStart)
+            .FirstOrDefault()
+            ?? NewAccountFor(request.HolidayType, request.UserId, request.StartDate).EarningStart;
+
+        var parts = AllocateUse(earned, ApprovedUses(request.UserId, request.HolidayType),
+            new PlannedUse(request.StartDate, request.Hours), debtAccount);
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        foreach (var part in parts)
+        {
+            var account = GetOrCreateAccount(request.UserId, request.HolidayType, part.AccountStart);
+            db.Insert(new HolidayTransaction
+            {
+                Id = Guid.NewGuid(),
+                HolidayAccountId = account.Id,
+                UserId = request.UserId,
+                Type = UsageType,
+                Hours = -part.Hours,
+                TransactionDate = request.StartDate,
+                PeriodMonth = null,
+                Reason = $"Holiday {request.StartDate:yyyy-MM-dd} - {request.EndDate:yyyy-MM-dd}",
+                CreatedBy = decidedBy,
+                HolidayRequestId = request.Id,
+                CreatedAt = now
+            });
+        }
+    }
+
+    private List<PlannedUse> ApprovedUses(string userId, string holidayType)
+        => (from t in db.HolidayTransactions
+            join a in db.HolidayAccounts on t.HolidayAccountId equals a.Id
+            where t.UserId == userId
+                  && a.HolidayType == holidayType
+                  && (t.Type == UsageType || t.Type == ReversalType)
+                  && t.HolidayRequestId != null
+            select new { RequestId = t.HolidayRequestId!.Value, t.TransactionDate, t.Hours })
+            .ToList()
+            .GroupBy(t => t.RequestId)
+            .Select(g => new PlannedUse(g.Min(t => t.TransactionDate), -g.Sum(t => t.Hours)))
+            .Where(p => p.Hours > 0)
+            .ToList();
     
     public decimal EarnedHoursForMonth(string userId, string holidayType, DateOnly anyDayInMonth)
     {
@@ -124,7 +184,7 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
                 ? savedHours
                 : CalculatedHoursForMonth(userId, holidayType, month);
             if (hours > 0)
-                lots.Add(new EarnedLot(usableFrom, account.UsageEnd, hours));
+                lots.Add(new EarnedLot(usableFrom, account.UsageEnd, hours, account.EarningStart));
         }
         return lots;
     }
@@ -232,19 +292,60 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
     public static DateOnly EndOfHolidayYear(DateOnly date)
         => HolidayYearStart(date).AddYears(1).AddDays(-1);
     
-    public record EarnedLot(DateOnly UsableFrom, DateOnly UsableTo, decimal Hours);
+    // 'AccountStart' is the earning start of the account the hours belong to
+    public record EarnedLot(DateOnly UsableFrom, DateOnly UsableTo, decimal Hours, DateOnly AccountStart = default);
+
+    // Part of a holiday taken from one account
+    public record UsePart(DateOnly AccountStart, decimal Hours);
 
     // Holiday that is planned (pending or approved) and uses hours from the day it starts
     public record PlannedUse(DateOnly StartDate, decimal Hours);
     
-    private sealed class OpenLot(DateOnly usableTo, decimal hours)
+    private sealed class OpenLot(DateOnly usableTo, decimal hours, DateOnly accountStart)
     {
         public DateOnly UsableTo { get; } = usableTo;
         public decimal Hours { get; set; } = hours;
+        public DateOnly AccountStart { get; } = accountStart;
     }
     public static decimal CalculateBalance(
         IEnumerable<EarnedLot> earned, IEnumerable<PlannedUse> planned, DateOnly date)
     {
+        var (open, debt) = Simulate(earned, planned, date);
+        open.RemoveAll(l => l.UsableTo < date);
+        return RoundHours(open.Sum(l => l.Hours) - debt);
+    }
+
+    public static List<UsePart> AllocateUse(
+        IEnumerable<EarnedLot> earned, IEnumerable<PlannedUse> earlier, PlannedUse use, DateOnly debtAccount)
+    {
+        var (open, _) = Simulate(earned, earlier, use.StartDate);
+        open.RemoveAll(l => l.UsableTo < use.StartDate);
+
+        var parts = new List<UsePart>();
+        var needed = use.Hours;
+        foreach (var lot in open.OrderBy(l => l.UsableTo))
+        {
+            if (needed == 0)
+                break;
+            var take = Math.Min(needed, lot.Hours);
+            if (take > 0)
+                parts.Add(new UsePart(lot.AccountStart, take));
+            needed -= take;
+        }
+        if (needed > 0)
+            parts.Add(new UsePart(debtAccount, needed));
+
+        // One part per account
+        return parts
+            .GroupBy(p => p.AccountStart)
+            .Select(g => new UsePart(g.Key, RoundHours(g.Sum(p => p.Hours))))
+            .ToList();
+    }
+    
+    private static (List<OpenLot> Open, decimal Debt) Simulate(
+        IEnumerable<EarnedLot> earned, IEnumerable<PlannedUse> planned, DateOnly date)
+    {
+        // On the same day a lot becomes usable before planned holiday uses hours
         var events = earned
             .Where(l => l.UsableFrom <= date)
             .Select(l => (Date: l.UsableFrom, Order: 0, Lot: l, Use: (PlannedUse?)null))
@@ -266,7 +367,7 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
                 var payBack = Math.Min(debt, e.Lot.Hours);
                 debt -= payBack;
                 if (e.Lot.Hours - payBack > 0)
-                    open.Add(new OpenLot(e.Lot.UsableTo, e.Lot.Hours - payBack));
+                    open.Add(new OpenLot(e.Lot.UsableTo, e.Lot.Hours - payBack, e.Lot.AccountStart));
             }
             else
             {
@@ -284,8 +385,7 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
             }
         }
 
-        open.RemoveAll(l => l.UsableTo < date);
-        return RoundHours(open.Sum(l => l.Hours) - debt);
+        return (open, debt);
     }
 
     // One work schedule and how many calendar days of a month it covers

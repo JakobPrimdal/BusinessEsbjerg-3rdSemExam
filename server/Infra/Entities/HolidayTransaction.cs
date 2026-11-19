@@ -43,6 +43,9 @@ public class HolidayTransaction
 
     [Column("reverses_transaction_id")]
     public Guid? ReversesTransactionId { get; set; }
+    
+    [Column("holiday_request_id")]
+    public Guid? HolidayRequestId { get; set; }
 
     [Column("reason")]
     public string? Reason { get; set; }
