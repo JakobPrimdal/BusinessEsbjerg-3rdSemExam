@@ -12,4 +12,6 @@ public interface IHolidayRuleSetService
     HolidayRuleSetDTOs.HolidayRuleSetResponseDTO? GetCurrentRuleSet();
 
     HolidayRuleSetDTOs.HolidayRuleSetResponseDTO CreateVersion(HolidayRuleSetDTOs.HolidayRuleSetRequestDTO ruleSet, string createdBy);
+
+    HolidayRuleSetDTOs.HolidayRuleSetResponseDTO ToggleActive(Guid id);
 }

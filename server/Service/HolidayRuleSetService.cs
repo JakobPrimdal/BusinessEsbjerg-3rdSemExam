@@ -75,6 +75,20 @@ public class HolidayRuleSetService(HolidayDb db, TimeProvider clock) : IHolidayR
         return HolidayRuleSetDTOs.MapToResponseDTO(ruleSet);
     }
 
+    public HolidayRuleSetDTOs.HolidayRuleSetResponseDTO ToggleActive(Guid id)
+    {
+        var ruleSet = db.HolidayRuleSets.FirstOrDefault(rs => rs.Id == id);
+
+        if (ruleSet == null)
+            throw new NotFoundException("Ruleset with id: " + id + " not found.");
+
+        ruleSet.IsActive = !ruleSet.IsActive;
+
+        db.Update(ruleSet);
+
+        return HolidayRuleSetDTOs.MapToResponseDTO(ruleSet);
+    }
+
     private static void ValidateRuleSet(HolidayRuleSet ruleSet)
     {
         // Earning rates

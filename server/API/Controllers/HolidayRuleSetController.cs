@@ -34,4 +34,11 @@ public class HolidayRuleSetController(IHolidayRuleSetService ruleSetService) : C
 
         return ruleSetService.CreateVersion(dto, createdBy);
     }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost(nameof(ToggleActive))]
+    public ActionResult<HolidayRuleSetDTOs.HolidayRuleSetResponseDTO> ToggleActive(Guid id)
+    {
+        return ruleSetService.ToggleActive(id);
+    }
 }
