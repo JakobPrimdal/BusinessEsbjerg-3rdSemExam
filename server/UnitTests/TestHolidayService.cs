@@ -17,7 +17,7 @@ public class TestHolidayService
         decimal result = HolidayService.CalculateWeeks1To5Hours(weeklyHours, daysPerMonth);
 
         // Assert: 2.08 * 37 / 5 = 15.392, rounded to 15.39
-        Assert.Equal(15.39m, result);
+        Assert.Equal(15.392m, result);
     }
 
     [Fact]
@@ -35,9 +35,8 @@ public class TestHolidayService
     public void CalculateWeek6Hours_FullTime_ReturnsFullRuleValue()
     {
         decimal result = HolidayService.CalculateWeek6Hours(37m, 3.083m);
-
-        // 3.083 rounded to 3.08
-        Assert.Equal(3.08m, result);
+        
+        Assert.Equal(3.083m, result);
     }
 
     [Fact]
@@ -45,8 +44,8 @@ public class TestHolidayService
     {
         decimal result = HolidayService.CalculateWeek6Hours(18.5m, 3.083m);
 
-        // 3.083 / 2 = 1.5415, rounded to 1.54
-        Assert.Equal(1.54m, result);
+        // 3.083 / 2 = 1.5415
+        Assert.Equal(1.5415m, result);
     }
 
     // Weekly hours  

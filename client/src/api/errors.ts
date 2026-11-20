@@ -25,3 +25,64 @@ export function errorMessage(e: unknown): string {
 
   return "Noget gik galt. Prøv igen.";
 }
+
+export function httpStatus(e: unknown): number | undefined {
+  return (e as { status?: number })?.status;
+}
+
+// RuleSets
+
+const ruleSetDanish: Record<string, string> = {
+  "No HolidayRuleSets exists.": "Der findes ingen regelsæt endnu",
+  "No date was specified.": "Vælg en dato",
+  "RuleSet for the specified date doesn't exist.": "Der findes intet aktivt regelsæt for den dato",
+  "Weeks 1-5 earning rate cannot be negative.": "Optjeningssatsen for uge 1–5 må ikke være negativ",
+  "Week 6 earning rate cannot be negative.": "Optjeningssatsen for uge 6 må ikke være negativ",
+  "Maximum transfer days must be between 0 and 5.": "Maks. overførselsdage skal være mellem 0 og 5",
+  "Sick waiting days cannot be negative.": "Sygedage uden erstatningsferie må ikke være negative",
+  "Employee notice period cannot be negative.": "Varsel for hovedferie må ikke være negativt",
+  "Employer notice period cannot be negative.": "Varsel for anden ferie må ikke være negativt",
+};
+
+const ruleSetNames: Record<string, string> = {
+  "Weeks 1-5 earning period": "Uge 1–5 optjeningsperiode",
+  "Week 6 earning period": "Uge 6 optjeningsperiode",
+  "Weeks 1-5 usage period": "Uge 1–5 brugsperiode",
+  "Week 6 usage period": "Uge 6 brugsperiode",
+  "Main holiday start": "Hovedferie start",
+  "Main holiday end": "Hovedferie slut",
+  "Weeks 1-5 transfer deadline": "Uge 1–5 overførselsfrist",
+  "Week 6 transfer deadline": "Uge 6 overførselsfrist",
+};
+
+const ruleSetReasons: Record<string, string> = {
+  "year offset must be between 0 and 100": "år-offset skal være mellem 0 og 100",
+  "month must be between 1 and 12": "måneden skal være mellem 1 og 12",
+  "invalid day for the selected month": "ugyldig dag for den valgte måned",
+  "start date must be before or equal to end date": "startdatoen skal ligge før eller på slutdatoen",
+};
+
+function translateRuleSet(detail: string): string | null {
+  if (ruleSetDanish[detail]) return ruleSetDanish[detail];
+
+  const m = detail.match(/^(.+): (.+)\.$/);
+  if (m && ruleSetReasons[m[2]]) return `${ruleSetNames[m[1]] ?? m[1]}: ${ruleSetReasons[m[2]]}`;
+
+  if (detail.startsWith("ValidFrom must be later")) {
+    return "«Gyldig fra» ligger for tidligt – der findes allerede et aktivt regelsæt med en senere startdato";
+  }
+  if (/^Ruleset with id: .* (was )?not found\.$/.test(detail)) return "Regelsættet blev ikke fundet";
+
+  return null;
+}
+
+export function ruleSetErrorMessage(e: unknown): string {
+  const detail = (e as HttpResponse<unknown, Problem>)?.error?.detail;
+  if (detail) {
+    const translated = translateRuleSet(detail);
+    if (translated) return translated;
+    // Unknown backend validation error -> show error
+    if (httpStatus(e) === 400) return detail;
+  }
+  return errorMessage(e);
+}

@@ -8,6 +8,8 @@ using Service.Exceptions;
 
 namespace IntegrationTests;
 
+// The unit tests check the formulas on their own. These tests check that the service
+// reads work hours and rules from the database, calculates correctly and saves the result.
 public class TestHolidayServiceWithDatabase : IDisposable
 {
     private readonly string _dbPath;
@@ -28,13 +30,12 @@ public class TestHolidayServiceWithDatabase : IDisposable
         _db = new HolidayDb(options);
 
         _db.CreateTable<User>();
-        _db.CreateTable<RuleValue>();
+        _db.CreateTable<HolidayRuleSet>();
         _db.CreateTable<WorkHour>();
         _db.CreateTable<HolidayAccount>();
         _db.CreateTable<HolidayTransaction>();
         
-        AddRule(HolidayService.DaysPerMonthKey, "2.08", new DateOnly(2020, 9, 1));
-        AddRule(HolidayService.Week6HoursPerMonthKey, "3.083", new DateOnly(2020, 9, 1));
+        _db.Insert(CreateRuleSet(new DateOnly(2020, 9, 1)));
 
         _sut = new HolidayService(_db, new FixedClock(new DateTimeOffset(2026, 11, 15, 12, 0, 0, TimeSpan.Zero)));
     }
@@ -45,17 +46,79 @@ public class TestHolidayServiceWithDatabase : IDisposable
         SqliteConnection.ClearAllPools();
         File.Delete(_dbPath);
     }
-    
-    private void AddRule(string key, string value, DateOnly validFrom)
+
+    //  helpers 
+
+    private static HolidayRuleSet CreateRuleSet(
+        DateOnly validFrom,
+        decimal weeks1To5EarningRate = 2.08m,
+        decimal week6EarningRate = 3.083m)
     {
-        _db.Insert(new RuleValue
+        return new HolidayRuleSet
         {
             Id = Guid.NewGuid(),
-            Key = key,
-            Value = value,
             ValidFrom = validFrom,
-            CreatedAt = DateTime.UtcNow
-        });
+            CreatedBy = "integration-test",
+            CreatedAt = DateTime.UtcNow,
+            IsActive = true,
+
+            Weeks1To5EarningRate = weeks1To5EarningRate,
+            Week6EarningRate = week6EarningRate,
+
+            // Weeks 1-5 earning period: September 1 - August 31
+            Weeks1To5EarningStartDay = 1,
+            Weeks1To5EarningStartMonth = 9,
+            Weeks1To5EarningEndDay = 31,
+            Weeks1To5EarningEndMonth = 8,
+            Weeks1To5EarningEndYearOffset = 1,
+
+            // Week 6 earning period: January 1 - December 31
+            Week6EarningStartDay = 1,
+            Week6EarningStartMonth = 1,
+            Week6EarningEndDay = 31,
+            Week6EarningEndMonth = 12,
+            Week6EarningEndYearOffset = 0,
+
+            // Weeks 1-5 usage period
+            Weeks1To5UsageStartDay = 1,
+            Weeks1To5UsageStartMonth = 9,
+            Weeks1To5UsageStartYearOffset = 0,
+            Weeks1To5UsageEndDay = 31,
+            Weeks1To5UsageEndMonth = 12,
+            Weeks1To5UsageEndYearOffset = 1,
+
+            // Week 6 usage period
+            Week6UsageStartDay = 1,
+            Week6UsageStartMonth = 5,
+            Week6UsageStartYearOffset = 1,
+            Week6UsageEndDay = 30,
+            Week6UsageEndMonth = 4,
+            Week6UsageEndYearOffset = 2,
+
+            // Transfer deadlines
+            Weeks1To5TransferDeadlineDay = 31,
+            Weeks1To5TransferDeadlineMonth = 12,
+            Weeks1To5TransferDeadlineYearOffset = 1,
+
+            Week6TransferDeadlineDay = 30,
+            Week6TransferDeadlineMonth = 9,
+            Week6TransferDeadlineYearOffset = 2,
+            
+            // Main holiday period
+            MainHolidayStartDay = 1,
+            MainHolidayStartMonth = 5,
+            MainHolidayEndDay = 30,
+            MainHolidayEndMonth = 9,
+
+            // Holiday transfer
+            HolidayTransferEnabled = false,
+            MaximumTransferDays = 5,
+
+            // Other rules
+            SickWaitingDays = 0,
+            MainHolidayNoticePeriodMonths = 3,
+            OtherHolidayNoticePeriodMonths = 1
+        };
     }
     
     private string CreateUser()
@@ -169,7 +232,10 @@ public class TestHolidayServiceWithDatabase : IDisposable
     public void AddMonthlyHoliday_RuleChanged_UsesNewestRule()
     {
         // Arrange: from 2027 the rule changes to 2.5 days per month
-        AddRule(HolidayService.DaysPerMonthKey, "2.5", new DateOnly(2027, 1, 1));
+        _db.Insert(CreateRuleSet(
+            new DateOnly(2027, 1, 1),
+            weeks1To5EarningRate: 2.5m));
+
         var userId = CreateUser();
         AddWorkWeek(userId, new DateOnly(2026, 1, 1), 7.4m);
 
@@ -178,7 +244,7 @@ public class TestHolidayServiceWithDatabase : IDisposable
         var balance = _sut.GetBalance(userId);
 
         // Assert
-        Assert.Equal(18.5m, balance.Weeks1To5Hours); // 2.5 * 37 / 5
+        Assert.Equal(18.5m, balance.Weeks1To5Hours);
     }
 
     [Fact]
@@ -252,5 +318,78 @@ public class TestHolidayServiceWithDatabase : IDisposable
         Assert.Equal(7.70m, _sut.GetBalance(bo).Weeks1To5Hours);
         Assert.Equal(0m, _sut.GetBalance(noHours).Weeks1To5Hours);
     }
+    
+    
+    [Fact]
+    public void AddMonthlyHoliday_UsesCorrectHistoricalRuleSet()
+    {
+        // Arrange
+        var septemberRules = CreateRuleSet(
+            new DateOnly(2026, 9, 1),
+            weeks1To5EarningRate: 2m);
+
+        var januaryRules = CreateRuleSet(
+            new DateOnly(2027, 1, 1),
+            weeks1To5EarningRate: 4m);
+
+        _db.Insert(septemberRules);
+        _db.Insert(januaryRules);
+
+        const string userId = "historical-rules-test";
+
+        _db.Insert(new WorkHour
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            ValidFrom = new DateOnly(2026, 9, 1),
+            MonHours = 8,
+            TueHours = 8,
+            WedHours = 8,
+            ThuHours = 8,
+            FriHours = 5,
+            SatHours = 0,
+            SunHours = 0,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        var service = new HolidayService(_db, TimeProvider.System);
+
+        // Act
+        var decemberAdded = service.AddMonthlyHoliday(
+            userId,
+            new DateOnly(2026, 12, 1));
+
+        var januaryAdded = service.AddMonthlyHoliday(
+            userId,
+            new DateOnly(2027, 1, 1));
+
+        // Assert
+        Assert.True(decemberAdded);
+        Assert.True(januaryAdded);
+
+        var transactions = (
+            from t in _db.HolidayTransactions
+            join a in _db.HolidayAccounts
+                on t.HolidayAccountId equals a.Id
+            where t.UserId == userId
+                  && t.Type == HolidayService.EarnedType
+                  && a.HolidayType == HolidayService.Weeks1To5
+            orderby t.PeriodMonth
+            select t
+        ).ToList();
+
+        Assert.Equal(2, transactions.Count);
+
+        // December must use the September ruleset.
+        Assert.Equal(new DateOnly(2026, 12, 1), transactions[0].PeriodMonth);
+        Assert.Equal(septemberRules.ValidFrom, transactions[0].RuleValidFrom);
+        Assert.Equal(14.80m, transactions[0].Hours);
+
+        // January must use the January ruleset.
+        Assert.Equal(new DateOnly(2027, 1, 1), transactions[1].PeriodMonth);
+        Assert.Equal(januaryRules.ValidFrom, transactions[1].RuleValidFrom);
+        Assert.Equal(29.60m, transactions[1].Hours);
+    }
+
     
 }
