@@ -30,13 +30,12 @@ public class TestHolidayServiceWithDatabase : IDisposable
         _db = new HolidayDb(options);
 
         _db.CreateTable<User>();
-        _db.CreateTable<RuleValue>();
+        _db.CreateTable<HolidayRuleSet>();
         _db.CreateTable<WorkHour>();
         _db.CreateTable<HolidayAccount>();
         _db.CreateTable<HolidayTransaction>();
         
-        AddRule(HolidayService.DaysPerMonthKey, "2.08", new DateOnly(2020, 9, 1));
-        AddRule(HolidayService.Week6HoursPerMonthKey, "3.083", new DateOnly(2020, 9, 1));
+        _db.Insert(CreateRuleSet(new DateOnly(2020, 9, 1)));
 
         _sut = new HolidayService(_db, new FixedClock(new DateTimeOffset(2026, 11, 15, 12, 0, 0, TimeSpan.Zero)));
     }
@@ -50,16 +49,76 @@ public class TestHolidayServiceWithDatabase : IDisposable
 
     //  helpers 
 
-    private void AddRule(string key, string value, DateOnly validFrom)
+    private static HolidayRuleSet CreateRuleSet(
+        DateOnly validFrom,
+        decimal weeks1To5EarningRate = 2.08m,
+        decimal week6EarningRate = 3.083m)
     {
-        _db.Insert(new RuleValue
+        return new HolidayRuleSet
         {
             Id = Guid.NewGuid(),
-            Key = key,
-            Value = value,
             ValidFrom = validFrom,
-            CreatedAt = DateTime.UtcNow
-        });
+            CreatedBy = "integration-test",
+            CreatedAt = DateTime.UtcNow,
+            IsActive = true,
+
+            Weeks1To5EarningRate = weeks1To5EarningRate,
+            Week6EarningRate = week6EarningRate,
+
+            // Weeks 1-5 earning period: September 1 - August 31
+            Weeks1To5EarningStartDay = 1,
+            Weeks1To5EarningStartMonth = 9,
+            Weeks1To5EarningEndDay = 31,
+            Weeks1To5EarningEndMonth = 8,
+            Weeks1To5EarningEndYearOffset = 1,
+
+            // Week 6 earning period: January 1 - December 31
+            Week6EarningStartDay = 1,
+            Week6EarningStartMonth = 1,
+            Week6EarningEndDay = 31,
+            Week6EarningEndMonth = 12,
+            Week6EarningEndYearOffset = 0,
+
+            // Weeks 1-5 usage period
+            Weeks1To5UsageStartDay = 1,
+            Weeks1To5UsageStartMonth = 9,
+            Weeks1To5UsageStartYearOffset = 0,
+            Weeks1To5UsageEndDay = 31,
+            Weeks1To5UsageEndMonth = 12,
+            Weeks1To5UsageEndYearOffset = 1,
+
+            // Week 6 usage period
+            Week6UsageStartDay = 1,
+            Week6UsageStartMonth = 5,
+            Week6UsageStartYearOffset = 1,
+            Week6UsageEndDay = 30,
+            Week6UsageEndMonth = 4,
+            Week6UsageEndYearOffset = 2,
+
+            // Transfer deadlines
+            Weeks1To5TransferDeadlineDay = 31,
+            Weeks1To5TransferDeadlineMonth = 12,
+            Weeks1To5TransferDeadlineYearOffset = 1,
+
+            Week6TransferDeadlineDay = 30,
+            Week6TransferDeadlineMonth = 9,
+            Week6TransferDeadlineYearOffset = 2,
+            
+            // Main holiday period
+            MainHolidayStartDay = 1,
+            MainHolidayStartMonth = 5,
+            MainHolidayEndDay = 30,
+            MainHolidayEndMonth = 9,
+
+            // Holiday transfer
+            HolidayTransferEnabled = false,
+            MaximumTransferDays = 5,
+
+            // Other rules
+            SickWaitingDays = 0,
+            MainHolidayNoticePeriodMonths = 3,
+            OtherHolidayNoticePeriodMonths = 1
+        };
     }
 
     // Puts a user straight into the database and returns the id
@@ -176,7 +235,10 @@ public class TestHolidayServiceWithDatabase : IDisposable
     public void AddMonthlyHoliday_RuleChanged_UsesNewestRule()
     {
         // Arrange: from 2027 the rule changes to 2.5 days per month
-        AddRule(HolidayService.DaysPerMonthKey, "2.5", new DateOnly(2027, 1, 1));
+        _db.Insert(CreateRuleSet(
+            new DateOnly(2027, 1, 1),
+            weeks1To5EarningRate: 2.5m));
+
         var userId = CreateUser();
         AddWorkWeek(userId, new DateOnly(2026, 1, 1), 7.4m);
 
@@ -185,7 +247,7 @@ public class TestHolidayServiceWithDatabase : IDisposable
         var balance = _sut.GetBalance(userId);
 
         // Assert
-        Assert.Equal(18.5m, balance.Weeks1To5Hours); // 2.5 * 37 / 5
+        Assert.Equal(18.5m, balance.Weeks1To5Hours);
     }
 
     [Fact]

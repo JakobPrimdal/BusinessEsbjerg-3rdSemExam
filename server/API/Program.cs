@@ -118,28 +118,11 @@ using (var scope = app.Services.CreateScope())
     await adminSeeder.SeedAsync();
     
     
-    holidayDb.CreateTable<RuleValue>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<WorkHour>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<Salary>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayAccount>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayTransaction>(tableOptions: TableOptions.CreateIfNotExists);
-    holidayDb.CreateTable<HolidayRuleSet>(tableOptions: TableOptions.CreateIfNotExists);
- 
-    void SeedRule(string key, string value)
-    {
-        if (holidayDb.RuleValues.Any(r => r.Key == key)) return;
-        holidayDb.Insert(new RuleValue
-        {
-            Id = Guid.NewGuid(),
-            Key = key,
-            Value = value,
-            ValidFrom = new DateOnly(2020, 9, 1),
-            CreatedAt = DateTime.UtcNow
-        });
-    }
-    SeedRule(HolidayService.DaysPerMonthKey, "2.08");
-    SeedRule(HolidayService.Week6HoursPerMonthKey, "3.083");
-
+    
     // Development only: demo employee with holiday data (login: employee / password).
     // Never runs in production, so these credentials are not in the cloud database.
     if (app.Environment.IsDevelopment())

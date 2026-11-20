@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using Infrastructure;
+﻿using Infrastructure;
 using Infrastructure.Entities;
 using LinqToDB;
 using Service.DTOs;
@@ -13,9 +12,6 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
 
     public const string Weeks1To5 = "weeks_1_5";
     public const string Week6 = "week_6";
-
-    public const string DaysPerMonthKey = "weeks_1_5_days_per_month";
-    public const string Week6HoursPerMonthKey = "week_6_hours_per_month";
 
     private const decimal FullTimeWeeklyHours = 37m;
 
@@ -48,22 +44,37 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
             .Where(w => w.UserId == userId && w.ValidFrom <= lastDay)
             .OrderByDescending(w => w.ValidFrom)
             .FirstOrDefault();
+
         if (schedule is null)
             return false;
 
         var weeklyHours = WeeklyHours(schedule);
 
-        var weeks1To5Rule = FindRule(DaysPerMonthKey, month)
-            ?? throw new InvalidOperationException($"No rule '{DaysPerMonthKey}' for {month}");
-        var addedWeeks1To5 = AddEarned(userId, month, Weeks1To5, weeklyHours, weeks1To5Rule,
-            CalculateWeeks1To5Hours(weeklyHours, ParseRule(weeks1To5Rule)));
+        var ruleSet = FindRuleSet(month) ?? throw new InvalidOperationException("No active holiday rule set exists for " + month +".");
+
+        var addedWeeks1To5 = AddEarned(
+            userId,
+            month,
+            Weeks1To5,
+            weeklyHours,
+            ruleSet,
+            CalculateWeeks1To5Hours(
+                weeklyHours,
+                ruleSet.Weeks1To5EarningRate));
 
         var addedWeek6 = false;
-        var week6Rule = FindRule(Week6HoursPerMonthKey, month);
-        if (week6Rule != null)
+
+        if (ruleSet.Week6EarningRate > 0)
         {
-            addedWeek6 = AddEarned(userId, month, Week6, weeklyHours, week6Rule,
-                CalculateWeek6Hours(weeklyHours, ParseRule(week6Rule)));
+            addedWeek6 = AddEarned(
+                userId,
+                month,
+                Week6,
+                weeklyHours,
+                ruleSet,
+                CalculateWeek6Hours(
+                    weeklyHours,
+                    ruleSet.Week6EarningRate));
         }
 
         return addedWeeks1To5 || addedWeek6;
@@ -149,49 +160,111 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
     public static DateOnly FirstDayOfMonth(DateOnly date) => new(date.Year, date.Month, 1);
     public static DateOnly PreviousMonth(DateOnly today) => FirstDayOfMonth(today).AddMonths(-1);
     
-    public static HolidayAccount NewAccountFor(string holidayType, string userId, DateOnly month)
-    {
-        if (holidayType == Week6)
-        {
-            var y = month.Year;
-            return new HolidayAccount
-            {
-                HolidayType = Week6,
-                UserId = userId,
-                EarningStart = new DateOnly(y, 1, 1),
-                EarningEnd = new DateOnly(y, 12, 31),
-                UsageStart = new DateOnly(y + 1, 5, 1),
-                UsageEnd = new DateOnly(y + 2, 4, 30),
-                TransferDeadline = new DateOnly(y + 2, 9, 30)
-            };
-        }
+    public static HolidayAccount NewAccountFor(string holidayType, string userId, DateOnly month, HolidayRuleSet rules)
+{
+    var isWeek6 = holidayType == Week6;
 
-        var start = HolidayYearStart(month);
-        return new HolidayAccount
-        {
-            HolidayType = Weeks1To5,
-            UserId = userId,
-            EarningStart = start,
-            EarningEnd = new DateOnly(start.Year + 1, 8, 31),
-            UsageStart = start,
-            UsageEnd = new DateOnly(start.Year + 1, 12, 31),
-            TransferDeadline = new DateOnly(start.Year + 1, 12, 31)
-        };
-    }
+    var earningStartDay = isWeek6
+        ? rules.Week6EarningStartDay
+        : rules.Weeks1To5EarningStartDay;
 
-    private bool AddEarned(string userId, DateOnly month, string holidayType,
-        decimal weeklyHours, RuleValue rule, decimal hours)
+    var earningStartMonth = isWeek6
+        ? rules.Week6EarningStartMonth
+        : rules.Weeks1To5EarningStartMonth;
+
+    var earningEndDay = isWeek6
+        ? rules.Week6EarningEndDay
+        : rules.Weeks1To5EarningEndDay;
+
+    var earningEndMonth = isWeek6
+        ? rules.Week6EarningEndMonth
+        : rules.Weeks1To5EarningEndMonth;
+
+    var earningEndYearOffset = isWeek6
+        ? rules.Week6EarningEndYearOffset
+        : rules.Weeks1To5EarningEndYearOffset;
+
+    var earningStartYear = month.Month > earningStartMonth ||
+                           (month.Month == earningStartMonth &&
+                            month.Day >= earningStartDay)
+        ? month.Year
+        : month.Year - 1;
+
+    var earningStart = new DateOnly(
+        earningStartYear,
+        earningStartMonth,
+        earningStartDay);
+
+    var earningEnd = new DateOnly(
+        earningStartYear + earningEndYearOffset,
+        earningEndMonth,
+        earningEndDay);
+
+    var usageStart = new DateOnly(
+        earningStartYear + (isWeek6
+            ? rules.Week6UsageStartYearOffset
+            : rules.Weeks1To5UsageStartYearOffset),
+        isWeek6
+            ? rules.Week6UsageStartMonth
+            : rules.Weeks1To5UsageStartMonth,
+        isWeek6
+            ? rules.Week6UsageStartDay
+            : rules.Weeks1To5UsageStartDay);
+
+    var usageEnd = new DateOnly(
+        earningStartYear + (isWeek6
+            ? rules.Week6UsageEndYearOffset
+            : rules.Weeks1To5UsageEndYearOffset),
+        isWeek6
+            ? rules.Week6UsageEndMonth
+            : rules.Weeks1To5UsageEndMonth,
+        isWeek6
+            ? rules.Week6UsageEndDay
+            : rules.Weeks1To5UsageEndDay);
+
+    var transferDeadline = new DateOnly(
+        earningStartYear + (isWeek6
+            ? rules.Week6TransferDeadlineYearOffset
+            : rules.Weeks1To5TransferDeadlineYearOffset),
+        isWeek6
+            ? rules.Week6TransferDeadlineMonth
+            : rules.Weeks1To5TransferDeadlineMonth,
+        isWeek6
+            ? rules.Week6TransferDeadlineDay
+            : rules.Weeks1To5TransferDeadlineDay);
+
+    return new HolidayAccount
     {
-        var account = GetOrCreateAccount(userId, holidayType, month);
+        HolidayType = holidayType,
+        UserId = userId,
+        EarningStart = earningStart,
+        EarningEnd = earningEnd,
+        UsageStart = usageStart,
+        UsageEnd = usageEnd,
+        TransferDeadline = transferDeadline
+    };
+}
+
+    private bool AddEarned(
+        string userId,
+        DateOnly month,
+        string holidayType,
+        decimal weeklyHours,
+        HolidayRuleSet ruleSet,
+        decimal hours)
+    {
+        var account = GetOrCreateAccount(userId, holidayType, month, ruleSet);
 
         var alreadyAdded = db.HolidayTransactions.Any(t =>
             t.HolidayAccountId == account.Id &&
             t.Type == EarnedType &&
             t.PeriodMonth == month);
+
         if (alreadyAdded)
             return false;
 
         var now = clock.GetUtcNow().UtcDateTime;
+
         db.Insert(new HolidayTransaction
         {
             Id = Guid.NewGuid(),
@@ -202,40 +275,46 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
             TransactionDate = DateOnly.FromDateTime(now),
             PeriodMonth = month,
             WeeklyHoursUsed = weeklyHours,
-            RuleValidFrom = rule.ValidFrom,
+
+            // Reference to the ruleset used for this transaction
+            RuleValidFrom = ruleSet.ValidFrom,
+
             Reason = "Monthly holiday",
             CreatedBy = null,
             CreatedAt = now
         });
+
         return true;
     }
 
-    private HolidayAccount GetOrCreateAccount(string userId, string holidayType, DateOnly month)
+    private HolidayAccount GetOrCreateAccount(string userId, string holidayType, DateOnly month, HolidayRuleSet ruleSet)
     {
-        var template = NewAccountFor(holidayType, userId, month);
+        var template = NewAccountFor(holidayType, userId, month, ruleSet);
 
         var existing = db.HolidayAccounts.FirstOrDefault(a =>
             a.UserId == userId &&
             a.HolidayType == holidayType &&
             a.EarningStart == template.EarningStart);
+
         if (existing != null)
             return existing;
 
         template.Id = Guid.NewGuid();
         template.Status = "open";
         template.CreatedAt = clock.GetUtcNow().UtcDateTime;
+
         db.Insert(template);
+
         return template;
     }
 
-    private RuleValue? FindRule(string key, DateOnly month)
-        => db.RuleValues
-            .Where(r => r.Key == key && r.ValidFrom <= month)
+    private HolidayRuleSet? FindRuleSet(DateOnly date)
+    {
+        return db.HolidayRuleSets
+            .Where(r => r.IsActive && r.ValidFrom <= date)
             .OrderByDescending(r => r.ValidFrom)
             .FirstOrDefault();
-
-    private static decimal ParseRule(RuleValue rule)
-        => decimal.Parse(rule.Value, CultureInfo.InvariantCulture);
+    }
     
     private void EnsureUserExists(string userId)
     {
