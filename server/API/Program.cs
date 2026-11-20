@@ -9,6 +9,7 @@ using Infrastructure.Interfaces;
 using Infrastructure.Seed;
 using LinqToDB;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using NSwag;
 using NSwag.Generation.Processors.Security;
@@ -94,8 +95,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 // Otherwise, use normal Authorization
                 if (ctx.Request.Cookies.TryGetValue("jwt", out var token))
                     ctx.Token = token;
-                
+
                 return Task.CompletedTask;
+            },
+
+            OnChallenge = async context =>
+            {
+                // Prevent the default ASP.NET Core response.
+                context.HandleResponse();
+
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+                await context.Response.WriteAsJsonAsync(new ProblemDetails
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    Title = "Unauthorized",
+                    Detail = "You must be authenticated to access this resource."
+                });
             }
         };
     });
