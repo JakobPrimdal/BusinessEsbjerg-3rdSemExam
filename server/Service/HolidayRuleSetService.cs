@@ -26,7 +26,7 @@ public class HolidayRuleSetService(HolidayDb db, TimeProvider clock) : IHolidayR
             throw new BadRequestException("No date was specified.");
         
         var  ruleSet = db.HolidayRuleSets
-            .Where(r => r.ValidFrom <= date)
+            .Where(rs => rs.ValidFrom <= date && rs.IsActive)
             .OrderByDescending(r => r.ValidFrom)
             .FirstOrDefault();
 
