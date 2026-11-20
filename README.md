@@ -187,12 +187,27 @@ was moved into a small static method (HolidayService.PreviousMonth) so it can be
 while the job itself is covered by integration tests.
 On the client side, tests are written with Bun’s built-in test runner (bun:test).
 
-#### Unit tests
+### Unit tests
 The backend unit tests are in the UnitTests project and use xUnit as the test framework and NSubstitute for mocking.
-Each test class targets one production class:
+Each test class targets one production class.
 
-#### Integration tests
+* TBA
+
+### Integration tests
 The integration tests are in the IntegrationTests project. They use xUnit together with Microsoft.AspNetCore.Mvc.Testing.
+
+* TBA
+
+### End-To-End tests
+* TBA
+
+### Manual- and Smoke Testing
+In addition to our automated tests, we have continuously performed manual testing of the different layers and external components throughout the development of the project.
+
+Our manual testing has primarily followed a smoke testing approach.
+'Smoke Testing' is based upon the idea of testing by priority - Testing the most critical parts and core functionalities of the system, to ensure that the essential features continue to work as expected throughout development.
+
+Consequently, some parts and features have been tested more than others, depending on their importance to the overall functionality of the system.
 
 
 ## Continuous Integration
