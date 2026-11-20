@@ -319,4 +319,77 @@ public class TestHolidayServiceWithDatabase : IDisposable
         Assert.Equal(0m, _sut.GetBalance(noHours).Weeks1To5Hours);
     }
     
+    
+    [Fact]
+    public void AddMonthlyHoliday_UsesCorrectHistoricalRuleSet()
+    {
+        // Arrange
+        var septemberRules = CreateRuleSet(
+            new DateOnly(2026, 9, 1),
+            weeks1To5EarningRate: 2m);
+
+        var januaryRules = CreateRuleSet(
+            new DateOnly(2027, 1, 1),
+            weeks1To5EarningRate: 4m);
+
+        _db.Insert(septemberRules);
+        _db.Insert(januaryRules);
+
+        const string userId = "historical-rules-test";
+
+        _db.Insert(new WorkHour
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            ValidFrom = new DateOnly(2026, 9, 1),
+            MonHours = 8,
+            TueHours = 8,
+            WedHours = 8,
+            ThuHours = 8,
+            FriHours = 5,
+            SatHours = 0,
+            SunHours = 0,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        var service = new HolidayService(_db, TimeProvider.System);
+
+        // Act
+        var decemberAdded = service.AddMonthlyHoliday(
+            userId,
+            new DateOnly(2026, 12, 1));
+
+        var januaryAdded = service.AddMonthlyHoliday(
+            userId,
+            new DateOnly(2027, 1, 1));
+
+        // Assert
+        Assert.True(decemberAdded);
+        Assert.True(januaryAdded);
+
+        var transactions = (
+            from t in _db.HolidayTransactions
+            join a in _db.HolidayAccounts
+                on t.HolidayAccountId equals a.Id
+            where t.UserId == userId
+                  && t.Type == HolidayService.EarnedType
+                  && a.HolidayType == HolidayService.Weeks1To5
+            orderby t.PeriodMonth
+            select t
+        ).ToList();
+
+        Assert.Equal(2, transactions.Count);
+
+        // December must use the September ruleset.
+        Assert.Equal(new DateOnly(2026, 12, 1), transactions[0].PeriodMonth);
+        Assert.Equal(septemberRules.ValidFrom, transactions[0].RuleValidFrom);
+        Assert.Equal(14.80m, transactions[0].Hours);
+
+        // January must use the January ruleset.
+        Assert.Equal(new DateOnly(2027, 1, 1), transactions[1].PeriodMonth);
+        Assert.Equal(januaryRules.ValidFrom, transactions[1].RuleValidFrom);
+        Assert.Equal(29.60m, transactions[1].Hours);
+    }
+
+    
 }
