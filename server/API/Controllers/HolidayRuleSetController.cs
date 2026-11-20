@@ -29,7 +29,7 @@ public class HolidayRuleSetController(IHolidayRuleSetService ruleSetService) : C
 
     [Authorize(Roles = "Admin")]
     [HttpPost(nameof(CreateHolidayRuleSet))]
-    public ActionResult<HolidayRuleSetDTOs.HolidayRuleSetResponseDTO> CreateHolidayRuleSet(HolidayRuleSetDTOs.HolidayRuleSetRequestDTO dto)
+    public ActionResult<HolidayRuleSetDTOs.HolidayRuleSetResponseDTO> CreateHolidayRuleSet([FromBody] HolidayRuleSetDTOs.HolidayRuleSetRequestDTO dto)
     {
         var createdBy = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.Identity?.Name;
 
