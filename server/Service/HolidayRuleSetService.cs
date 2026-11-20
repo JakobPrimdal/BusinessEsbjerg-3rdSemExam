@@ -55,7 +55,8 @@ public class HolidayRuleSetService(HolidayDb db, TimeProvider clock) : IHolidayR
 
         // Get the latest existing version.
         var latestVersion = db.HolidayRuleSets
-            .OrderByDescending(r => r.ValidFrom)
+            .Where(rs => rs.IsActive)
+            .OrderByDescending(rs => rs.ValidFrom)
             .FirstOrDefault();
 
         // New versions must be chronologically ordered.
