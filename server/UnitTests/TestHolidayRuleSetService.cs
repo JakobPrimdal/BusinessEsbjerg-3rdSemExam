@@ -225,6 +225,7 @@ public class TestHolidayRuleSetService : IDisposable
         return new HolidayRuleSetDTOs.HolidayRuleSetRequestDTO()
         {
             ValidFrom = validFrom ?? new DateOnly(2026, 9, 1),
+            IsActive = true,
 
             Weeks1To5EarningRate = 2.08m,
             Week6EarningRate = 3.083m,
@@ -285,6 +286,7 @@ public class TestHolidayRuleSetService : IDisposable
             ValidFrom = dto.ValidFrom,
             CreatedBy = "test-user",
             CreatedAt = DateTime.UtcNow,
+            IsActive = true,
 
             Weeks1To5EarningRate = 2.08m,
             Week6EarningRate = 3.083m,
