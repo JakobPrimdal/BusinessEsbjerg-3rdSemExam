@@ -41,4 +41,10 @@ public class HolidayRuleSetController(IHolidayRuleSetService ruleSetService) : C
     {
         return ruleSetService.ToggleActive(id);
     }
+
+    [HttpGet(nameof(GetRulesById))]
+    public ActionResult<HolidayRuleSetDTOs.HolidayRuleSetResponseDTO> GetRulesById(Guid id)
+    {
+        return ruleSetService.GetRulesById(id);
+    }
 }

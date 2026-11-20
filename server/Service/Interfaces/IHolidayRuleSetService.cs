@@ -1,4 +1,3 @@
-using Infrastructure.Entities;
 using Service.DTOs;
 
 namespace Service.Interfaces;
@@ -14,4 +13,6 @@ public interface IHolidayRuleSetService
     HolidayRuleSetDTOs.HolidayRuleSetResponseDTO CreateVersion(HolidayRuleSetDTOs.HolidayRuleSetRequestDTO ruleSet, string createdBy);
 
     HolidayRuleSetDTOs.HolidayRuleSetResponseDTO ToggleActive(Guid id);
+
+    HolidayRuleSetDTOs.HolidayRuleSetResponseDTO GetRulesById(Guid id);
 }
