@@ -6,6 +6,7 @@ using Service.Interfaces;
 
 namespace Api.Controllers;
 
+[Authorize]
 public class HolidayRuleSetController(IHolidayRuleSetService ruleSetService) : ControllerBase
 {
     [HttpGet(nameof(GetHolidayRuleSets))]
