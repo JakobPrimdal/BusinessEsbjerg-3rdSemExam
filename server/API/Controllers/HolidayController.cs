@@ -7,15 +7,15 @@ using Service.DTOs;
 
 namespace Api.Controllers;
 
-public class HolidayController(HolidayService holidayService) : ControllerBase
+public class HolidayController(
+    HolidayService holidayService,
+    HolidayRequestService requestService,
+    HolidayDecisionService decisionService) : ControllerBase
 {
     [Authorize]
     [HttpGet("holiday/" + nameof(GetMyBalance))]
     public HolidayBalanceDTO GetMyBalance()
-    {
-        var userId = HttpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
-        return holidayService.GetBalance(userId);
-    }
+        => holidayService.GetBalance(CurrentUserId());
 
     [Authorize(Roles = "Admin,Accountant")]
     [HttpGet("holiday/" + nameof(GetBalance) + "/{userId}")]
@@ -37,4 +37,32 @@ public class HolidayController(HolidayService holidayService) : ControllerBase
         var count = holidayService.AddMonthlyHolidayForAll(month);
         return Ok(new { month = HolidayService.FirstDayOfMonth(month), usersUpdated = count });
     }
+
+    [Authorize]
+    [HttpPost("holiday/" + nameof(PreviewRequest))]
+    public HolidayRequestPreviewDTO PreviewRequest([FromBody] CreateHolidayRequestDTO dto)
+        => requestService.Preview(CurrentUserId(), dto);
+
+    [Authorize]
+    [HttpPost("holiday/" + nameof(RequestHoliday))]
+    public HolidayRequestDTO RequestHoliday([FromBody] CreateHolidayRequestDTO dto)
+        => requestService.Create(CurrentUserId(), dto);
+    
+    [Authorize(Roles = "Accountant")]
+    [HttpGet("holiday/" + nameof(GetPendingRequests))]
+    public List<PendingHolidayRequestDTO> GetPendingRequests()
+        => decisionService.GetPending();
+    
+    [Authorize(Roles = "Accountant")]
+    [HttpPost("holiday/" + nameof(ApproveRequest) + "/{requestId:guid}")]
+    public HolidayDecisionDTO ApproveRequest(Guid requestId)
+        => decisionService.Approve(requestId, CurrentUserId());
+    
+    [Authorize(Roles = "Accountant")]
+    [HttpPost("holiday/" + nameof(DenyRequest) + "/{requestId:guid}")]
+    public HolidayDecisionDTO DenyRequest(Guid requestId, [FromBody] DenyHolidayRequestDTO dto)
+        => decisionService.Deny(requestId, CurrentUserId(), dto.Reason);
+
+    private string CurrentUserId()
+        => HttpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
 }

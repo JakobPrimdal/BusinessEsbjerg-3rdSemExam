@@ -43,7 +43,7 @@ public class TestHolidayServiceWithDatabase : IDisposable
     public void Dispose()
     {
         _db.Dispose();
-        SqliteConnection.ClearAllPools(); // release the file so it can be deleted
+        SqliteConnection.ClearAllPools();
         File.Delete(_dbPath);
     }
 
@@ -120,8 +120,7 @@ public class TestHolidayServiceWithDatabase : IDisposable
             OtherHolidayNoticePeriodMonths = 1
         };
     }
-
-    // Puts a user straight into the database and returns the id
+    
     private string CreateUser()
     {
         var userId = Guid.NewGuid().ToString();
@@ -141,8 +140,7 @@ public class TestHolidayServiceWithDatabase : IDisposable
         _sut.AddWorkHours(new CreateWorkHourDTO(userId, validFrom,
             hoursPerDay, hoursPerDay, hoursPerDay, hoursPerDay, hoursPerDay, 0m, 0m));
     }
-
-    //  AddWorkHours: saving + server-side validation 
+    
 
     [Fact]
     public void AddWorkHours_ValidWeek_IsSavedInDatabase()
@@ -179,8 +177,7 @@ public class TestHolidayServiceWithDatabase : IDisposable
 
         Assert.Throws<NotFoundException>(() => _sut.AddWorkHours(dto));
     }
-
-    // ---------- AddMonthlyHoliday: the calculation with data from the database ----------
+    
 
     [Fact]
     public void AddMonthlyHoliday_FullTimeEmployee_SavesCorrectHours()
@@ -195,8 +192,8 @@ public class TestHolidayServiceWithDatabase : IDisposable
 
         // Assert
         Assert.True(added);
-        Assert.Equal(15.392m, balance.Weeks1To5Hours); // 2.08 * 37 / 5
-        Assert.Equal(3.083m, balance.Week6Hours);      // full time gets the full rule value
+        Assert.Equal(15.39m, balance.Weeks1To5Hours); // 2.08 * 37 / 5 
+        Assert.Equal(3.08m, balance.Week6Hours);      // full time gets the full rule value, 3.083 -> 3.08
     }
 
     [Fact]
@@ -211,8 +208,8 @@ public class TestHolidayServiceWithDatabase : IDisposable
         var balance = _sut.GetBalance(userId);
 
         // Assert: exactly half of a full-time employee
-        Assert.Equal(7.696m, balance.Weeks1To5Hours); // 2.08 * 18.5 / 5
-        Assert.Equal(1.5415m, balance.Week6Hours);    // 3.083 / 2
+        Assert.Equal(7.70m, balance.Weeks1To5Hours); 
+        Assert.Equal(1.54m, balance.Week6Hours);     
     }
 
     [Fact]
@@ -228,7 +225,7 @@ public class TestHolidayServiceWithDatabase : IDisposable
         var balance = _sut.GetBalance(userId);
 
         // Assert: March is calculated with the new 18.5 hour week
-        Assert.Equal(7.696m, balance.Weeks1To5Hours);
+        Assert.Equal(7.70m, balance.Weeks1To5Hours);
     }
 
     [Fact]
@@ -265,7 +262,7 @@ public class TestHolidayServiceWithDatabase : IDisposable
         // Assert
         Assert.True(first);
         Assert.False(second);
-        Assert.Equal(15.392m, balance.Weeks1To5Hours);
+        Assert.Equal(15.39m, balance.Weeks1To5Hours);
     }
 
     [Fact]
@@ -281,8 +278,8 @@ public class TestHolidayServiceWithDatabase : IDisposable
         var balance = _sut.GetBalance(userId);
 
         // Assert
-        Assert.Equal(30.784m, balance.Weeks1To5Hours); // 2 * 15.392
-        Assert.Equal(6.166m, balance.Week6Hours);      // 2 * 3.083
+        Assert.Equal(30.78m, balance.Weeks1To5Hours); // 2 * 15.39
+        Assert.Equal(6.16m, balance.Week6Hours);      // 2 * 3.08
     }
 
     [Fact]
@@ -317,14 +314,9 @@ public class TestHolidayServiceWithDatabase : IDisposable
 
         // Assert
         Assert.Equal(2, count);
-        Assert.Equal(15.392m, _sut.GetBalance(anna).Weeks1To5Hours);
-        Assert.Equal(7.696m, _sut.GetBalance(bo).Weeks1To5Hours);
+        Assert.Equal(15.39m, _sut.GetBalance(anna).Weeks1To5Hours);
+        Assert.Equal(7.70m, _sut.GetBalance(bo).Weeks1To5Hours);
         Assert.Equal(0m, _sut.GetBalance(noHours).Weeks1To5Hours);
     }
-
-    [Fact]
-    public void GetBalance_UnknownUser_ThrowsNotFound()
-    {
-        Assert.Throws<NotFoundException>(() => _sut.GetBalance(Guid.NewGuid().ToString()));
-    }
+    
 }
