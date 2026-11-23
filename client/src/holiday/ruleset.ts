@@ -213,60 +213,16 @@ export function toRequestBody(form: RuleSetForm): HolidayRuleSetRequestDTO {
     return body;
 }
 
-// Validation - same validation rules as backend
-
-function checkDate(name: string, n: Record<NumKey, number>, d: DateKeys): string | null {
-    const offset = d.offset ? n[d.offset] : 0;
-    const month = n[d.month];
-    const day = n[d.day];
-
-    if (offset < 0 || offset > 100) return `${name}: år-offset skal være mellem 0 og 100`;
-    if (month < 1 || month > 12) return `${name}: måneden skal være mellem 1 og 12`;
-    const daysInMonth = new Date(2000 + offset, month, 0).getDate();
-    if (day < 1 || day > daysInMonth) return `${name}: ugyldig dag for den valgte måned`;
-    return null;
-}
-
-function dateValue(n: Record<NumKey, number>, d: DateKeys): number {
-    const offset = d.offset ? n[d.offset] : 0;
-    return (2000 + offset) * 10000 + n[d.month] * 100 + n[d.day];
-}
-
+// Only basic validation as the rest is validated by the backend
 export function validateForm(form: RuleSetForm): string | null {
     if (!form.validFrom) return "Vælg en gyldig fra-dato";
 
-    const n = {} as Record<NumKey, number>;
     for (const k of NUM_KEYS) {
         const raw = form.values[k].trim();
         const label = LABELS.get(k) ?? k;
         if (raw === "" || Number.isNaN(Number(raw))) return `Udfyld ${label} med et tal`;
-        n[k] = Number(raw);
-        if (!DECIMAL_KEYS.has(k) && !Number.isInteger(n[k])) return `${label} skal være et helt tal`;
+        if (!DECIMAL_KEYS.has(k) && !Number.isInteger(Number(raw))) return `${label} skal være et helt tal`;
     }
-
-    if (n.weeks1To5EarningRate < 0) return "Optjeningssatsen for uge 1–5 må ikke være negativ";
-    if (n.week6EarningRate < 0) return "Optjeningssatsen for uge 6 må ikke være negativ";
-
-    for (const p of ALL_PERIODS) {
-        const error = checkDate(`${p.title} (start)`, n, p.start) ?? checkDate(`${p.title} (slut)`, n, p.end);
-        if (error) return error;
-        if (p.compare && dateValue(n, p.start) > dateValue(n, p.end)) {
-            return `${p.title}: startdatoen skal ligge før eller på slutdatoen`;
-        }
-    }
-
-    if (n.maximumTransferDays < 0 || n.maximumTransferDays > 5) {
-        return "Maks. overførselsdage skal være mellem 0 og 5";
-    }
-
-    for (const d of DEADLINES) {
-        const error = checkDate(d.title, n, d.date);
-        if (error) return error;
-    }
-
-    if (n.sickWaitingDays < 0) return "Antallet af sygedage uden erstatningsferie må ikke være negativt";
-    if (n.mainHolidayNoticePeriodMonths < 0) return "Varsel for hovedferie - må ikke være negativt";
-    if (n.otherHolidayNoticePeriodMonths < 0) return "Varsel for anden ferie - må ikke være negativt";
 
     return null;
 }
