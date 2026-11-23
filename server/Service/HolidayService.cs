@@ -327,10 +327,10 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
     }
 
     public static decimal CalculateWeeks1To5Hours(decimal weeklyHours, decimal daysPerMonth)
-        => Math.Round(daysPerMonth * weeklyHours / 5m, 4, MidpointRounding.AwayFromZero);
+        => Math.Round(daysPerMonth * weeklyHours / 5m, HourDecimals, MidpointRounding.AwayFromZero);
 
     public static decimal CalculateWeek6Hours(decimal weeklyHours, decimal fullTimeHoursPerMonth)
-        => Math.Round(fullTimeHoursPerMonth * weeklyHours / FullTimeWeeklyHours, 4, MidpointRounding.AwayFromZero);
+        => Math.Round(fullTimeHoursPerMonth * weeklyHours / FullTimeWeeklyHours, HourDecimals, MidpointRounding.AwayFromZero);
 
     public static decimal WeeklyHours(WorkHour w)
         => w.MonHours + w.TueHours + w.WedHours + w.ThuHours + w.FriHours + w.SatHours + w.SunHours;
