@@ -24,8 +24,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type CreateArgs = NonNullable<Parameters<typeof api.holidayRuleSet.holidayRuleSetCreateHolidayRuleSet>[0]>;
-
 const SICK_DAYS_HINT =
     "Hvis en medarbejder bliver syg under ferie i uge 1–5, kan vedkommende få erstatningsferie for sygedagene, " +
     "men først efter de første X sygedage. (0 = erstatning fra første sygedag)"
@@ -81,7 +79,7 @@ export function CreateRuleSetPage() {
 
         setBusy(true);
         try {
-            await api.holidayRuleSet.holidayRuleSetCreateHolidayRuleSet(toRequestBody(form) as unknown as CreateArgs);
+            await api.holidayRuleSet.holidayRuleSetCreateHolidayRuleSet(toRequestBody(form));
             navigate("/admin/regler", { state: { created: form.validFrom } });
         } catch (err) {
             setError(ruleSetErrorMessage(err));
@@ -108,7 +106,7 @@ export function CreateRuleSetPage() {
                 <Alert>
                     <AlertDescription>
                         Værdierne er kopieret fra regelsættet, der gælder fra {formatDate(copiedFrom)}. Husk at vælge en ny
-                        «gyldig fra»-dato.
+                        gyldig fra-dato.
                     </AlertDescription>
                 </Alert>
             )}

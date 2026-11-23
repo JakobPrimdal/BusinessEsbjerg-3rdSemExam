@@ -233,15 +233,15 @@ function dateValue(n: Record<NumKey, number>, d: DateKeys): number {
 }
 
 export function validateForm(form: RuleSetForm): string | null {
-    if (!form.validFrom) return "Vælg en «gyldig fra»-dato";
+    if (!form.validFrom) return "Vælg en gyldig fra-dato";
 
     const n = {} as Record<NumKey, number>;
     for (const k of NUM_KEYS) {
         const raw = form.values[k].trim();
         const label = LABELS.get(k) ?? k;
-        if (raw === "" || Number.isNaN(Number(raw))) return `Udfyld «${label}» med et tal`;
+        if (raw === "" || Number.isNaN(Number(raw))) return `Udfyld ${label} med et tal`;
         n[k] = Number(raw);
-        if (!DECIMAL_KEYS.has(k) && !Number.isInteger(n[k])) return `«${label}» skal være et helt tal`;
+        if (!DECIMAL_KEYS.has(k) && !Number.isInteger(n[k])) return `${label} skal være et helt tal`;
     }
 
     if (n.weeks1To5EarningRate < 0) return "Optjeningssatsen for uge 1–5 må ikke være negativ";

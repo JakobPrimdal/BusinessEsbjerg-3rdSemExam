@@ -69,7 +69,7 @@ function translateRuleSet(detail: string): string | null {
   if (m && ruleSetReasons[m[2]]) return `${ruleSetNames[m[1]] ?? m[1]}: ${ruleSetReasons[m[2]]}`;
 
   if (detail.startsWith("ValidFrom must be later")) {
-    return "«Gyldig fra» ligger for tidligt – der findes allerede et aktivt regelsæt med en senere startdato";
+    return "Gyldig fra ligger for tidligt – der findes allerede et aktivt regelsæt med en senere startdato";
   }
 
   if (detail.startsWith("Cannot activate rule set")) {
