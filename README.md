@@ -17,6 +17,7 @@ Each layer has a distinct responsibility, helping separate concerns and keep the
 
 #### Layers and Responsibilities 
 1. API Layer 
+
 The API layer is the entry point to the application. It handles incoming HTTP requests and communicates with the Service layer. 
 Responsibilities: 
 Exposes REST endpoints through controllers. Handles HTTP-specific concerns such as routing, authentication and authorization. 
@@ -25,6 +26,7 @@ The API layer should contain as little business logic as possible. Its primary r
 
 
 2. Service Layer 
+
 The Service layer contains the application's business logic and rules. It processes requests received from the API layer and coordinates the operations required to fulfil them. 
 Responsibilities: 
 Implements business logic and validation. Handles authentication and user-related operations. Manages password hashing and JWT token generation. 
@@ -33,6 +35,7 @@ Defines service contracts and other interfaces. For example, AuthService handles
 
 
 3. Infrastructure Layer (Infra) 
+
 The Infrastructure layer handles communication with external resources, primarily the database. 
 Responsibilities: 
 Defines database entities and their mappings. Manages database connections through LinqToDB. Implements database operations such as creating, retrieving and inserting (CRUD) users. 
@@ -183,12 +186,27 @@ Logic that was hard to test (the date calculation inside the MonthlyHolidaySched
 so it can be unit tested, while the monthly holiday logic the job runs (HolidayService.AddMonthlyHolidayForAll) is covered.
 On the client side, tests are written with Bun’s built-in test runner (bun:test).
 
-#### Unit tests
+### Unit tests
 The backend unit tests are in the UnitTests project and use xUnit as the test framework and NSubstitute for mocking.
-Each test class targets one production class:
+Each test class targets one production class.
 
-#### Integration tests
+* TBA
+
+### Integration tests
 The integration tests are in the IntegrationTests project. They use xUnit together with Microsoft.AspNetCore.Mvc.Testing.
+
+* TBA
+
+### End-To-End tests
+* TBA
+
+### Manual- and Smoke Testing
+In addition to our automated tests, we have continuously performed manual testing of the different layers and external components throughout the development of the project.
+
+Our manual testing has primarily followed a smoke testing approach.
+'Smoke Testing' is based upon the idea of testing by priority - Testing the most critical parts and core functionalities of the system, to ensure that the essential features continue to work as expected throughout development.
+
+Consequently, some parts and features have been tested more than others, depending on their importance to the overall functionality of the system.
 
 
 ## Continuous Integration
@@ -204,6 +222,14 @@ Because the pipeline runs on pull requests, a change that breaks an existing tes
 
 ## Continuous Deployment
 
+* TBA
+
+
+## Database
+
+* TBA
+
+### Database Seeding
 * TBA
 
 

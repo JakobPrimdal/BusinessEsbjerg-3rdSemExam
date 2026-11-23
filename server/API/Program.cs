@@ -9,6 +9,7 @@ using Infrastructure.Interfaces;
 using Infrastructure.Seed;
 using LinqToDB;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using NSwag;
 using NSwag.Generation.Processors.Security;
@@ -29,6 +30,7 @@ builder.Services.AddScoped<ILoginDb>(sp => sp.GetRequiredService<LoginDb>());
 var holidayDbOptions = new DataOptions<HolidayDb>(options);
 builder.Services.AddScoped<HolidayDb>(_ => new HolidayDb(holidayDbOptions));
 
+builder.Services.AddScoped<HolidayService>();
 builder.Services.AddScoped<AuthService>();
 
 builder.Services.AddScoped<HolidayRequestService>();
@@ -37,6 +39,7 @@ builder.Services.AddScoped<HolidayDecisionService>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
+builder.Services.AddScoped<IHolidayRuleSetService, HolidayRuleSetService>();
 
 // Admin seeder
 builder.Services.AddScoped<AdminSeeder>();
@@ -95,8 +98,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 // Otherwise, use normal Authorization
                 if (ctx.Request.Cookies.TryGetValue("jwt", out var token))
                     ctx.Token = token;
-                
+
                 return Task.CompletedTask;
+            },
+
+            OnChallenge = async context =>
+            {
+                // Prevent the default ASP.NET Core response.
+                context.HandleResponse();
+
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+                await context.Response.WriteAsJsonAsync(new ProblemDetails
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    Title = "Unauthorized",
+                    Detail = "You must be authenticated to access this resource."
+                });
             }
         };
     });
@@ -108,39 +126,24 @@ var app = builder.Build();
 // Create DB + tables
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<LoginDb>();
-    DbInitializer.LoginDbInitialize(db);
+    var loginDb = scope.ServiceProvider.GetRequiredService<LoginDb>();
+    DbInitializer.LoginDbInitialize(loginDb);
+    
+    var holidayDb = scope.ServiceProvider.GetRequiredService<HolidayDb>();
+    DbInitializer.HolidayRuleSetDbInitialize(holidayDb, scope.ServiceProvider.GetRequiredService<TimeProvider>());
     
     // Seed initial admin user
     var adminSeeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
     await adminSeeder.SeedAsync();
     
-    var holidayDb = scope.ServiceProvider.GetRequiredService<HolidayDb>();
-    holidayDb.CreateTable<RuleValue>(tableOptions: TableOptions.CreateIfNotExists);
+    
     holidayDb.CreateTable<WorkHour>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<Salary>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayAccount>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayTransaction>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayRequest>(tableOptions: TableOptions.CreateIfNotExists);
     SchemaUpgrade.Run(holidayDb);
-    void SeedRule(string key, string value)
-    {
-        if (holidayDb.RuleValues.Any(r => r.Key == key)) return;
-        holidayDb.Insert(new RuleValue
-        {
-            Id = Guid.NewGuid(),
-            Key = key,
-            Value = value,
-            ValidFrom = new DateOnly(2020, 9, 1),
-            CreatedAt = DateTime.UtcNow
-        });
-    }
-    SeedRule(HolidayService.DaysPerMonthKey, "2.08");
-    SeedRule(HolidayService.Week6HoursPerMonthKey, "3.083");
     
-    SeedRule(HolidayService.NoticeMainHolidayMonthsKey, "3");
-    SeedRule(HolidayService.NoticeOtherHolidayMonthsKey, "1");
-
     // Development only: demo employee with holiday data (login: employee / password).
     // Never runs in production, so these credentials are not in the cloud database.
     if (app.Environment.IsDevelopment())

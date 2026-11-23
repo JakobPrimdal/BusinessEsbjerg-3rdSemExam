@@ -7,6 +7,8 @@ import { Header } from "@/components/Header";
 import { CreateUserPage } from "@/pages/CreateUserPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { MyBalancePage } from "@/pages/MyBalancePage";
+import { RuleSetsPage } from "@/pages/RuleSetsPage";
+import { CreateRuleSetPage} from "@/pages/CreateRuleSetPage";
 
 export function App() {
   return (
@@ -31,6 +33,22 @@ export function App() {
                   <RequireRole role={UserRole.Admin}>
                     <CreateUserPage />
                   </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/regler"
+                element={
+                    <RequireRole role={UserRole.Admin}>
+                      <RuleSetsPage />
+                    </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/regler/ny"
+                element={
+                    <RequireRole role={UserRole.Admin}>
+                      <CreateRuleSetPage />
+                    </RequireRole>
                 }
               />
               <Route path="*" element={<Navigate to="/" replace />} />

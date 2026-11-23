@@ -17,4 +17,10 @@ public static class DbInitializer
                 db.Insert(new Role { Id = roleId, Name = role.ToString() });
         }
     }
+
+    public static void HolidayRuleSetDbInitialize(HolidayDb db, TimeProvider tp)
+    {
+        db.CreateTable<HolidayRuleSet>(tableOptions: TableOptions.CreateIfNotExists);
+        HolidayRuleSetSeeder.Seed(db, tp);
+    }
 }

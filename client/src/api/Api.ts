@@ -97,6 +97,256 @@ export interface CreateWorkHourDTO {
   sunHours?: number;
 }
 
+export interface HolidayRequestPreviewDTO {
+  /** @format int32 */
+  workingDays?: number;
+  /** @format decimal */
+  hours?: number;
+  /** @format decimal */
+  balanceBefore?: number;
+  /** @format decimal */
+  balanceAfter?: number;
+  /** @format decimal */
+  maxDebt?: number;
+  canRequest?: boolean;
+  error?: string | null;
+  shortNotice?: boolean;
+  /** @format int32 */
+  noticeMonths?: number;
+}
+
+export interface CreateHolidayRequestDTO {
+  /** @format date */
+  startDate?: string;
+  /** @format date */
+  endDate?: string;
+  holidayType?: string;
+}
+
+export interface HolidayRequestDTO {
+  /** @format guid */
+  id?: string;
+  holidayType?: string;
+  /** @format date */
+  startDate?: string;
+  /** @format date */
+  endDate?: string;
+  /** @format decimal */
+  hours?: number;
+  status?: string;
+  /** @format date-time */
+  createdAt?: string;
+  shortNotice?: boolean;
+  /** @format int32 */
+  noticeMonths?: number;
+}
+
+export interface PendingHolidayRequestDTO {
+  /** @format guid */
+  id?: string;
+  userId?: string;
+  username?: string;
+  holidayType?: string;
+  /** @format date */
+  startDate?: string;
+  /** @format date */
+  endDate?: string;
+  /** @format decimal */
+  hours?: number;
+  /** @format date-time */
+  createdAt?: string;
+  /** @format decimal */
+  balanceBefore?: number;
+  /** @format decimal */
+  balanceAfter?: number;
+  problem?: string | null;
+}
+
+export interface HolidayDecisionDTO {
+  /** @format guid */
+  id?: string;
+  status?: string;
+  decidedBy?: string;
+  /** @format date-time */
+  decidedAt?: string;
+  decisionReason?: string | null;
+}
+
+export interface DenyHolidayRequestDTO {
+  reason?: string | null;
+}
+
+export interface HolidayRuleSetResponseDTO {
+  /** @format guid */
+  id?: string;
+  /** @format date */
+  validFrom?: string;
+  createdBy?: string | null;
+  /** @format date-time */
+  createdAt?: string;
+  isActive?: boolean;
+  /** @format decimal */
+  weeks1To5EarningRate?: number;
+  /** @format decimal */
+  week6EarningRate?: number;
+  /** @format int32 */
+  weeks1To5EarningStartDay?: number;
+  /** @format int32 */
+  weeks1To5EarningStartMonth?: number;
+  /** @format int32 */
+  weeks1To5EarningEndDay?: number;
+  /** @format int32 */
+  weeks1To5EarningEndMonth?: number;
+  /** @format int32 */
+  weeks1To5EarningEndYearOffset?: number;
+  /** @format int32 */
+  week6EarningStartDay?: number;
+  /** @format int32 */
+  week6EarningStartMonth?: number;
+  /** @format int32 */
+  week6EarningEndDay?: number;
+  /** @format int32 */
+  week6EarningEndMonth?: number;
+  /** @format int32 */
+  week6EarningEndYearOffset?: number;
+  /** @format int32 */
+  weeks1To5UsageStartDay?: number;
+  /** @format int32 */
+  weeks1To5UsageStartMonth?: number;
+  /** @format int32 */
+  weeks1To5UsageStartYearOffset?: number;
+  /** @format int32 */
+  weeks1To5UsageEndDay?: number;
+  /** @format int32 */
+  weeks1To5UsageEndMonth?: number;
+  /** @format int32 */
+  weeks1To5UsageEndYearOffset?: number;
+  /** @format int32 */
+  week6UsageStartDay?: number;
+  /** @format int32 */
+  week6UsageStartMonth?: number;
+  /** @format int32 */
+  week6UsageStartYearOffset?: number;
+  /** @format int32 */
+  week6UsageEndDay?: number;
+  /** @format int32 */
+  week6UsageEndMonth?: number;
+  /** @format int32 */
+  week6UsageEndYearOffset?: number;
+  /** @format int32 */
+  mainHolidayStartDay?: number;
+  /** @format int32 */
+  mainHolidayStartMonth?: number;
+  /** @format int32 */
+  mainHolidayEndDay?: number;
+  /** @format int32 */
+  mainHolidayEndMonth?: number;
+  holidayTransferEnabled?: boolean;
+  /** @format int32 */
+  maximumTransferDays?: number;
+  /** @format int32 */
+  weeks1To5TransferDeadlineDay?: number;
+  /** @format int32 */
+  weeks1To5TransferDeadlineMonth?: number;
+  /** @format int32 */
+  weeks1To5TransferDeadlineYearOffset?: number;
+  /** @format int32 */
+  week6TransferDeadlineDay?: number;
+  /** @format int32 */
+  week6TransferDeadlineMonth?: number;
+  /** @format int32 */
+  week6TransferDeadlineYearOffset?: number;
+  /** @format int32 */
+  sickWaitingDays?: number;
+  /** @format int32 */
+  mainHolidayNoticePeriodMonths?: number;
+  /** @format int32 */
+  otherHolidayNoticePeriodMonths?: number;
+}
+
+export interface HolidayRuleSetRequestDTO {
+  /** @format date */
+  validFrom?: string;
+  isActive?: boolean;
+  /** @format decimal */
+  weeks1To5EarningRate?: number;
+  /** @format decimal */
+  week6EarningRate?: number;
+  /** @format int32 */
+  weeks1To5EarningStartDay?: number;
+  /** @format int32 */
+  weeks1To5EarningStartMonth?: number;
+  /** @format int32 */
+  weeks1To5EarningEndDay?: number;
+  /** @format int32 */
+  weeks1To5EarningEndMonth?: number;
+  /** @format int32 */
+  weeks1To5EarningEndYearOffset?: number;
+  /** @format int32 */
+  week6EarningStartDay?: number;
+  /** @format int32 */
+  week6EarningStartMonth?: number;
+  /** @format int32 */
+  week6EarningEndDay?: number;
+  /** @format int32 */
+  week6EarningEndMonth?: number;
+  /** @format int32 */
+  week6EarningEndYearOffset?: number;
+  /** @format int32 */
+  weeks1To5UsageStartDay?: number;
+  /** @format int32 */
+  weeks1To5UsageStartMonth?: number;
+  /** @format int32 */
+  weeks1To5UsageStartYearOffset?: number;
+  /** @format int32 */
+  weeks1To5UsageEndDay?: number;
+  /** @format int32 */
+  weeks1To5UsageEndMonth?: number;
+  /** @format int32 */
+  weeks1To5UsageEndYearOffset?: number;
+  /** @format int32 */
+  week6UsageStartDay?: number;
+  /** @format int32 */
+  week6UsageStartMonth?: number;
+  /** @format int32 */
+  week6UsageStartYearOffset?: number;
+  /** @format int32 */
+  week6UsageEndDay?: number;
+  /** @format int32 */
+  week6UsageEndMonth?: number;
+  /** @format int32 */
+  week6UsageEndYearOffset?: number;
+  /** @format int32 */
+  mainHolidayStartDay?: number;
+  /** @format int32 */
+  mainHolidayStartMonth?: number;
+  /** @format int32 */
+  mainHolidayEndDay?: number;
+  /** @format int32 */
+  mainHolidayEndMonth?: number;
+  holidayTransferEnabled?: boolean;
+  /** @format int32 */
+  maximumTransferDays?: number;
+  /** @format int32 */
+  weeks1To5TransferDeadlineDay?: number;
+  /** @format int32 */
+  weeks1To5TransferDeadlineMonth?: number;
+  /** @format int32 */
+  weeks1To5TransferDeadlineYearOffset?: number;
+  /** @format int32 */
+  week6TransferDeadlineDay?: number;
+  /** @format int32 */
+  week6TransferDeadlineMonth?: number;
+  /** @format int32 */
+  week6TransferDeadlineYearOffset?: number;
+  /** @format int32 */
+  sickWaitingDays?: number;
+  /** @format int32 */
+  mainHolidayNoticePeriodMonths?: number;
+  /** @format int32 */
+  otherHolidayNoticePeriodMonths?: number;
+}
+
 export type QueryParamsType = Record<string | number, any>;
 export type ResponseFormat = keyof Omit<Body, "body" | "bodyUsed">;
 
@@ -521,6 +771,236 @@ export class Api<
         method: "POST",
         query: query,
         secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Holiday
+     * @name HolidayPreviewRequest
+     * @request POST:/holiday/PreviewRequest
+     * @secure
+     */
+    holidayPreviewRequest: (
+      data: CreateHolidayRequestDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<HolidayRequestPreviewDTO, any>({
+        path: `/holiday/PreviewRequest`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Holiday
+     * @name HolidayRequestHoliday
+     * @request POST:/holiday/RequestHoliday
+     * @secure
+     */
+    holidayRequestHoliday: (
+      data: CreateHolidayRequestDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<HolidayRequestDTO, any>({
+        path: `/holiday/RequestHoliday`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Holiday
+     * @name HolidayGetPendingRequests
+     * @request GET:/holiday/GetPendingRequests
+     * @secure
+     */
+    holidayGetPendingRequests: (params: RequestParams = {}) =>
+      this.request<PendingHolidayRequestDTO[], any>({
+        path: `/holiday/GetPendingRequests`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Holiday
+     * @name HolidayApproveRequest
+     * @request POST:/holiday/ApproveRequest/{requestId}
+     * @secure
+     */
+    holidayApproveRequest: (requestId: string, params: RequestParams = {}) =>
+      this.request<HolidayDecisionDTO, any>({
+        path: `/holiday/ApproveRequest/${requestId}`,
+        method: "POST",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Holiday
+     * @name HolidayDenyRequest
+     * @request POST:/holiday/DenyRequest/{requestId}
+     * @secure
+     */
+    holidayDenyRequest: (
+      requestId: string,
+      data: DenyHolidayRequestDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<HolidayDecisionDTO, any>({
+        path: `/holiday/DenyRequest/${requestId}`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+  };
+  holidayRuleSet = {
+    /**
+     * No description
+     *
+     * @tags HolidayRuleSet
+     * @name HolidayRuleSetGetHolidayRuleSets
+     * @request GET:/GetHolidayRuleSets
+     * @secure
+     */
+    holidayRuleSetGetHolidayRuleSets: (params: RequestParams = {}) =>
+      this.request<HolidayRuleSetResponseDTO[], any>({
+        path: `/GetHolidayRuleSets`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags HolidayRuleSet
+     * @name HolidayRuleSetGetCurrent
+     * @request GET:/GetCurrent
+     * @secure
+     */
+    holidayRuleSetGetCurrent: (params: RequestParams = {}) =>
+      this.request<HolidayRuleSetResponseDTO, any>({
+        path: `/GetCurrent`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags HolidayRuleSet
+     * @name HolidayRuleSetGetHolidayRuleSetByDate
+     * @request GET:/GetHolidayRuleSetByDate
+     * @secure
+     */
+    holidayRuleSetGetHolidayRuleSetByDate: (
+      query?: {
+        /** @format date */
+        date?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<HolidayRuleSetResponseDTO, any>({
+        path: `/GetHolidayRuleSetByDate`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags HolidayRuleSet
+     * @name HolidayRuleSetCreateHolidayRuleSet
+     * @request POST:/CreateHolidayRuleSet
+     * @secure
+     */
+    holidayRuleSetCreateHolidayRuleSet: (
+      data: HolidayRuleSetRequestDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<HolidayRuleSetResponseDTO, any>({
+        path: `/CreateHolidayRuleSet`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags HolidayRuleSet
+     * @name HolidayRuleSetToggleActive
+     * @request POST:/ToggleActive
+     * @secure
+     */
+    holidayRuleSetToggleActive: (
+      query?: {
+        /** @format guid */
+        id?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<HolidayRuleSetResponseDTO, any>({
+        path: `/ToggleActive`,
+        method: "POST",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags HolidayRuleSet
+     * @name HolidayRuleSetGetRulesById
+     * @request GET:/GetRulesById
+     * @secure
+     */
+    holidayRuleSetGetRulesById: (
+      query?: {
+        /** @format guid */
+        id?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<HolidayRuleSetResponseDTO, any>({
+        path: `/GetRulesById`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
         ...params,
       }),
   };

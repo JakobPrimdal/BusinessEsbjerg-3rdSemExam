@@ -35,8 +35,6 @@ public class TestHolidayService
     public void CalculateWeek6Hours_FullTime_ReturnsFullRuleValue()
     {
         decimal result = HolidayService.CalculateWeek6Hours(37m, 3.083m);
-
-        // 3.083 rounded to 3.08
         Assert.Equal(3.08m, result);
     }
 

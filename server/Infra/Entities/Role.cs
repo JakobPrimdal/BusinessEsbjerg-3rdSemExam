@@ -5,6 +5,8 @@ namespace Infrastructure.Entities;
 [Table("Role")]
 public class Role
 {
-    [PrimaryKey] public int Id { get; set; }
+    [PrimaryKey, Column] public int Id { get; set; }
+    
+    [Column, NotNull]
     public string Name { get; set; } = "";
 }
