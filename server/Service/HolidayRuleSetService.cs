@@ -83,6 +83,10 @@ public class HolidayRuleSetService(HolidayDb db, TimeProvider clock) : IHolidayR
         if (ruleSet == null)
             throw new NotFoundException("Ruleset with id: " + id + " not found.");
 
+        if (!ruleSet.IsActive)
+            if (db.HolidayRuleSets.Any(rs => rs.ValidFrom == ruleSet.ValidFrom && rs.IsActive && rs.Id != id))
+                throw new BadRequestException("Cannot activate rule set - you cannot have multiple rule sets be active with the same valid-from date.");
+        
         ruleSet.IsActive = !ruleSet.IsActive;
 
         db.Update(ruleSet);
