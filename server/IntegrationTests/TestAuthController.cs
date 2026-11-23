@@ -21,7 +21,12 @@ public class TestAuthController(WebApplicationFactory<Program> factory) : IClass
     {
         BaseAddress = new Uri("https://localhost")
     };
-    
+
+    // Only one accountant may exist, and the database is shared by all tests in this class,
+    // so the accountant is created once and reused.
+    private static readonly SemaphoreSlim AccountantLock = new(1, 1);
+    private static string? _accountantUsername;
+
     static TestAuthController()
     {
         var dbPath = Path.Combine(Path.GetTempPath(), "integration-tests.db");
@@ -60,6 +65,20 @@ public class TestAuthController(WebApplicationFactory<Program> factory) : IClass
         response.EnsureSuccessStatusCode();
 
         return username;
+    }
+
+    // Creates the one allowed accountant on first use and returns the same username afterwards
+    private async Task<string> EnsureAccountantAsync()
+    {
+        await AccountantLock.WaitAsync();
+        try
+        {
+            return _accountantUsername ??= await CreateUserAsync("Accountant");
+        }
+        finally
+        {
+            AccountantLock.Release();
+        }
     }
 
     private static async Task<string?> ReadProblemDetailAsync(HttpResponseMessage response)
@@ -116,10 +135,10 @@ public class TestAuthController(WebApplicationFactory<Program> factory) : IClass
     [Fact]
     public async Task Register_AsAdmin_CreatesUserWhoCanThenLogIn()
     {
-        // Arrange
+        // Arrange: a normal "User" role, because Admin and Accountant can only exist once
         await LoginAsAdminAsync();
         var username = "user" + Guid.NewGuid().ToString("N")[..10];
-        var request = new RegisterRequestDTO(username, UserPassword, "Accountant");
+        var request = new RegisterRequestDTO(username, UserPassword, "User");
 
         // Act
         var response = await _client.PostAsJsonAsync("/Register", request);
@@ -128,7 +147,7 @@ public class TestAuthController(WebApplicationFactory<Program> factory) : IClass
         // Assert: user was created
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(username, created!.Username);
-        Assert.Equal(UserRole.Accountant, created.Role.Id);
+        Assert.Equal(UserRole.User, created.Role.Id);
         Assert.True(created.IsActive);
 
         // Act & Assert: the new user can log in - proves it was saved and the password was hashed correctly
@@ -169,13 +188,48 @@ public class TestAuthController(WebApplicationFactory<Program> factory) : IClass
         Assert.Equal("Username is already taken", await ReadProblemDetailAsync(response));
     }
 
+    [Theory]
+    [InlineData("Admin")]
+    [InlineData("Accountant")]
+    public async Task Register_WhenRoleAlreadyExists_Returns400(string role)
+    {
+        // Arrange: make sure an accountant exists (the admin is seeded at startup)
+        await EnsureAccountantAsync();
+        await LoginAsAdminAsync();
+        var request = new RegisterRequestDTO("user" + Guid.NewGuid().ToString("N")[..10], UserPassword, role);
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/Register", request);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("It is not possible to create more", await ReadProblemDetailAsync(response));
+    }
+
+    [Fact]
+    public async Task Register_WhenRoleAlreadyExists_DoesNotCreateTheUser()
+    {
+        // Arrange
+        await EnsureAccountantAsync();
+        await LoginAsAdminAsync();
+        var username = "user" + Guid.NewGuid().ToString("N")[..10];
+
+        // Act
+        await _client.PostAsJsonAsync("/Register", new RegisterRequestDTO(username, UserPassword, "Admin"));
+
+        // Assert: the rejected user must not be able to log in
+        var response = await factory.CreateClient(HttpsClient)
+            .PostAsJsonAsync("/Login", new LoginRequestDTO(username, UserPassword));
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     // GET /GetMe tests
 
     [Fact]
     public async Task GetMe_WhenLoggedIn_ReturnsTheCurrentUser()
     {
         // Arrange
-        var username = await CreateUserAsync("Accountant");
+        var username = await EnsureAccountantAsync();
         await LoginAsync(_client, username, UserPassword);
 
         // Act
@@ -253,7 +307,7 @@ public class TestAuthController(WebApplicationFactory<Program> factory) : IClass
     public async Task AdminOnlyEndpoints_AsNonAdmin_Return403(string method, string path)
     {
         // Arrange: logged in, but not as an Admin
-        var username = await CreateUserAsync("Accountant");
+        var username = await EnsureAccountantAsync();
         await LoginAsync(_client, username, UserPassword);
         var request = new HttpRequestMessage(new HttpMethod(method), path);
         if (method == "POST")
