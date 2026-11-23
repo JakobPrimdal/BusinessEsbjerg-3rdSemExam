@@ -9,45 +9,38 @@ public class HolidayRequest
     [Column("id")]
     public Guid Id { get; set; }
 
-    [Column("user_id")]
-    [NotNull]
-    public string UserId { get; set; } = "";
+    [Column,NotNull]
+    public string UserId { get; set; } 
 
     // Which balance it spends from: HolidayService.Weeks1To5 or HolidayService.Week6
-    [Column("holiday_type")]
-    [NotNull]
-    public string HolidayType { get; set; } = "";
+    [Column,NotNull]
+    public string HolidayType { get; set; } 
 
-    [Column("start_date")]
-    [NotNull]
+    [Column,NotNull]
     public DateOnly StartDate { get; set; }
 
     // The last day of the holiday (inclusive)
-    [Column("end_date")]
-    [NotNull]
+    [Column,NotNull]
     public DateOnly EndDate { get; set; }
     
-    [Column("hours")]
-    [NotNull]
+    [Column,NotNull]
     public decimal Hours { get; set; }
 
     // See HolidayRequestStatus
-    [Column("status")]
-    [NotNull]
+    [Column,NotNull]
     public string Status { get; set; } = HolidayRequestStatus.Pending;
     
-    [Column("decided_by")]
+    [Column]
     public string? DecidedBy { get; set; }
 
-    [Column("decided_at")]
+    [Column]
     public DateTime? DecidedAt { get; set; }
 
     // Required when a request is denied
-    [Column("decision_reason")]
+    [Column]
     public string? DecisionReason { get; set; }
 
-    [Column("created_at")]
-    [NotNull]
+    [Column,NotNull]
     public DateTime CreatedAt { get; set; }
 }
 

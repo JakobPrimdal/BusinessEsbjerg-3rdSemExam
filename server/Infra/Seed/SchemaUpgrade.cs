@@ -9,6 +9,10 @@ public static class SchemaUpgrade
     public static void Run(HolidayDb db)
     {
         AddColumnIfMissing(db, "holiday_transaction", "holiday_request_id", sameTypeAs: "holiday_account_id");
+
+        // tables that are no longer used
+        db.Execute("DROP TABLE IF EXISTS salary");
+        db.Execute("DROP TABLE IF EXISTS rule_value");
     }
 
     private static void AddColumnIfMissing(DataConnection db, string table, string column, string sameTypeAs)

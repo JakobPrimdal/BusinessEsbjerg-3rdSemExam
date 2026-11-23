@@ -138,7 +138,6 @@ using (var scope = app.Services.CreateScope())
     
     
     holidayDb.CreateTable<WorkHour>(tableOptions: TableOptions.CreateIfNotExists);
-    holidayDb.CreateTable<Salary>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayAccount>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayTransaction>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayRequest>(tableOptions: TableOptions.CreateIfNotExists);

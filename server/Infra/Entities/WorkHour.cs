@@ -9,44 +9,34 @@ public class WorkHour
     [Column("id")]
     public Guid Id { get; set; }
 
-    [Column("user_id")]
-    [NotNull]
+    [Column,NotNull]
     public string UserId { get; set; } = "";
 
-    [Column("valid_from")]
-    [NotNull]
+    [Column,NotNull]
     public DateOnly ValidFrom { get; set; }
 
-    [Column("mon_hours")]
-    [NotNull]
+    [Column,NotNull]
     public decimal MonHours { get; set; }
 
-    [Column("tue_hours")]
-    [NotNull]
+    [Column,NotNull]
     public decimal TueHours { get; set; }
 
-    [Column("wed_hours")]
-    [NotNull]
+    [Column,NotNull]
     public decimal WedHours { get; set; }
 
-    [Column("thu_hours")]
-    [NotNull]
+    [Column,NotNull]
     public decimal ThuHours { get; set; }
 
-    [Column("fri_hours")]
-    [NotNull]
+    [Column,NotNull]
     public decimal FriHours { get; set; }
 
-    [Column("sat_hours")]
-    [NotNull]
+    [Column,NotNull]
     public decimal SatHours { get; set; }
 
-    [Column("sun_hours")]
-    [NotNull]
+    [Column,NotNull]
     public decimal SunHours { get; set; }
 
-    [Column("created_at")]
-    [NotNull]
+    [Column,NotNull]
     public DateTime CreatedAt { get; set; }
 }
 

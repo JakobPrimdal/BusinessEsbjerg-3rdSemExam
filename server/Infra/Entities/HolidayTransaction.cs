@@ -9,51 +9,40 @@ public class HolidayTransaction
     [Column("id")]
     public Guid Id { get; set; }
 
-    [Column("holiday_account_id")]
-    [NotNull]
+    [Column,NotNull]
     public Guid HolidayAccountId { get; set; }
 
-    [Column("user_id")]
-    [NotNull]
+    [Column,NotNull]
     public string UserId { get; set; } = "";
 
-    [Column("type")]
-    [NotNull]
+    [Column,NotNull]
     public string Type { get; set; } = "";
 
-    [Column("hours")]
-    [NotNull]
+    [Column,NotNull]
     public decimal Hours { get; set; }
 
-    [Column("transaction_date")]
+    [Column]
     [NotNull]
     public DateOnly TransactionDate { get; set; }
 
-    [Column("period_month")]
+    [Column]
     public DateOnly? PeriodMonth { get; set; }
 
-    [Column("qualifying_salary")]
-    public decimal? QualifyingSalary { get; set; }
-
-    [Column("weekly_hours_used")]
+    [Column]
     public decimal? WeeklyHoursUsed { get; set; }
 
-    [Column("rule_valid_from")]
+    [Column]
     public DateOnly? RuleValidFrom { get; set; }
-
-    [Column("reverses_transaction_id")]
-    public Guid? ReversesTransactionId { get; set; }
     
-    [Column("holiday_request_id")]
+    [Column]
     public Guid? HolidayRequestId { get; set; }
 
-    [Column("reason")]
+    [Column]
     public string? Reason { get; set; }
 
-    [Column("created_by")]
+    [Column]
     public string? CreatedBy { get; set; }
 
-    [Column("created_at")]
-    [NotNull]
+    [Column,NotNull]
     public DateTime CreatedAt { get; set; }
 }

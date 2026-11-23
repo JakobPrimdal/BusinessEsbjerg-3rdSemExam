@@ -9,39 +9,29 @@ public class HolidayAccount
     [Column("id")]
     public Guid Id { get; set; }
 
-    [Column("user_id")]
-    [NotNull]
-    public string UserId { get; set; } = "";
+    [Column,NotNull]
+    public string UserId { get; set; } 
 
-    [Column("holiday_type")]
-    [NotNull]
-    public string HolidayType { get; set; } = "";
-
-    [Column("earning_start")]
-    [NotNull]
+    [Column,NotNull]
+    public string HolidayType { get; set; } 
+    [Column,NotNull]
     public DateOnly EarningStart { get; set; }
 
-    [Column("earning_end")]
-    [NotNull]
+    [Column,NotNull]
     public DateOnly EarningEnd { get; set; }
 
-    [Column("usage_start")]
-    [NotNull]
+    [Column,NotNull]
     public DateOnly UsageStart { get; set; }
 
-    [Column("usage_end")]
-    [NotNull]
+    [Column,NotNull]
     public DateOnly UsageEnd { get; set; }
 
-    [Column("transfer_deadline")]
-    [NotNull]
+    [Column,NotNull]
     public DateOnly TransferDeadline { get; set; }
 
-    [Column("status")]
-    [NotNull]
-    public string Status { get; set; } = "open";
+    [Column,NotNull]
+    public string Status { get; set; } 
 
-    [Column("created_at")]
-    [NotNull]
+    [Column ,NotNull]
     public DateTime CreatedAt { get; set; }
 }
