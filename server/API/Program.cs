@@ -141,7 +141,6 @@ using (var scope = app.Services.CreateScope())
     holidayDb.CreateTable<HolidayAccount>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayTransaction>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayRequest>(tableOptions: TableOptions.CreateIfNotExists);
-    SchemaUpgrade.Run(holidayDb);
     
     // Development only: demo employee with holiday data (login: employee / password).
     // Never runs in production, so these credentials are not in the cloud database.

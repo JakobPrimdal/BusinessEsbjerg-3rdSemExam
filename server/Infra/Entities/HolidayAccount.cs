@@ -2,36 +2,16 @@
 
 namespace Infrastructure.Entities;
 
-[Table("holiday_account")]
 public class HolidayAccount
 {
-    [PrimaryKey]
-    [Column("id")]
-    public Guid Id { get; set; }
-
-    [Column,NotNull]
-    public string UserId { get; set; } 
-
-    [Column,NotNull]
-    public string HolidayType { get; set; } 
-    [Column,NotNull]
+    [PrimaryKey] public Guid Id { get; set; }
+    public string UserId { get; set; } = "";
+    public string HolidayType { get; set; } = "";
     public DateOnly EarningStart { get; set; }
-
-    [Column,NotNull]
     public DateOnly EarningEnd { get; set; }
-
-    [Column,NotNull]
     public DateOnly UsageStart { get; set; }
-
-    [Column,NotNull]
     public DateOnly UsageEnd { get; set; }
-
-    [Column,NotNull]
     public DateOnly TransferDeadline { get; set; }
-
-    [Column,NotNull]
-    public string Status { get; set; } 
-
-    [Column ,NotNull]
+    public string Status { get; set; } = "open";
     public DateTime CreatedAt { get; set; }
 }
