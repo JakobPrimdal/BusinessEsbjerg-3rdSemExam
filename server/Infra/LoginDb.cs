@@ -31,4 +31,9 @@ public class LoginDb(DataOptions<LoginDb> options) : DataConnection(options.Opti
     {
         await this.InsertAsync(user);
     }
+
+    public Task<bool> RoleExistsAsync(UserRole role)
+    {
+        return Users.AnyAsync(u => u.Role == role);
+    }
 }
