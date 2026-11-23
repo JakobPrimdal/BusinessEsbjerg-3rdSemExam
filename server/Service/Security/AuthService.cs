@@ -24,6 +24,14 @@ public class AuthService (ILoginDb db,ITokenService tokenService,IPasswordHasher
         if (await db.UsernameExistsAsync(dto.Username.Trim()))
             throw new BadRequestException("Username is already taken");
 
+        UserRole role = RoleToEnum(dto.Role);
+        if (role == UserRole.Accountant || role == UserRole.Admin)
+        { 
+            bool roleAlreadyExists = await db.RoleExistsAsync(role);
+            if (roleAlreadyExists)
+                throw new BadRequestException("It is not possible to create more users with the selected role");
+        }
+        
         //  Build the entity
         var user = new User
         {

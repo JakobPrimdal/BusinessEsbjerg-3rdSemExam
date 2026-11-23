@@ -9,6 +9,7 @@ const danish: Record<string, string> = {
   "Username can be at most 30 characters": "Brugernavnet må højst være 30 tegn",
   "Password must be at least 7 characters": "Adgangskoden skal være mindst 7 tegn",
   "User not found": "Brugeren blev ikke fundet",
+  "It is not possible to create more users with the selected role": "Der kan ikke oprettes flere brugere med den angivne rolle."
 };
 
 export function errorMessage(e: unknown): string {
