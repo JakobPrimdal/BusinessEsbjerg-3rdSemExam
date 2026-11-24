@@ -10,7 +10,8 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
 export function Header() {
     const { user, logout } = useAuth();
     const isAdmin = user?.role?.id === UserRole.Admin;
-
+    const isAccountant = user?.role?.id === UserRole.Accountant;
+    
     return (
         <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
             <div className="flex items-center gap-6">
@@ -24,6 +25,11 @@ export function Header() {
                         <NavLink to="/ferie/anmod" className={navClass}>
                             Anmod om ferie
                         </NavLink>
+                        {isAccountant && (
+                            <NavLink to="/ferie/anmodninger" className={navClass}>
+                                Anmodninger
+                            </NavLink>
+                        )}
                     </nav>
                 )}
                 {isAdmin && (

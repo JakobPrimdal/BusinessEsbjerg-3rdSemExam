@@ -16,5 +16,7 @@ export function RequireRole({ role, children }: { role?: UserRole; children: Rea
 
 // Where a user lands after login
 export function homeFor(user: UserDTO): string {
-  return user.role?.id === UserRole.Admin ? "/admin/brugere" : "/hjem";
+    if (user.role?.id === UserRole.Admin) return "/admin/brugere";
+    if (user.role?.id === UserRole.Accountant) return "/ferie/anmodninger";
+    return "/hjem";
 }
