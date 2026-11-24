@@ -61,6 +61,8 @@ This separation means that the business logic does not need to know how the data
 
 ### Frontend Architecture
 
+* TBA
+
 
 ## Branching strategies
 
@@ -112,7 +114,7 @@ dotnet user-secrets set "Admin:Username" "your-admin-username"` `dotnet user-sec
 The SQLite database (`db.db`) is created automatically in `server/API` on first run.
 The API runs on localhost:5194
 
-### Running the backend with Docker
+### Running the backend in a container with Docker
 
 (The Dockerfile expects `Jwt__Secret`, `Admin_Username`, `Admin__Password`, and `Cors__Origins__0` as an environment variables.)
 
@@ -139,6 +141,7 @@ docker run --rm --name business-esb-backend -p 127.0.0.1:4000:4000 \
 0. To the frontend of this application in production you will need to create a `client/.env.production` file to contain you backend api call.
 Use this: `BUN_PUBLIC_API_URL=your-backend-api`
 
+
 1. Install dependencies:
 
 ```bash
@@ -156,6 +159,31 @@ bun run dev
 ```bash
 bun run start
 ```
+
+
+### Running the frontend in a container with Docker
+
+(The Docker file expects you to have made the .env.production file from step 0 under 'Running frontend locally'')
+
+1. Build an image of the frontend.
+Use this command:
+```bash
+docker build -t business-esb-frontend .
+ ```
+
+2. Run the image.
+Use this command:
+```bash
+docker run --rm \
+  --name business-esb-frontend \
+  -p 3000:3000 \
+  business-esb-frontend
+```
+
+## Running using docker compose
+#### Running the complete application in separate containers using docker compose
+
+* TBA
 
 
 ## Testing
