@@ -66,10 +66,10 @@ const ruleSetReasons: Record<string, string> = {
 function translateRuleSet(detail: string): string | null {
   if (ruleSetDanish[detail]) return ruleSetDanish[detail];
 
-  const m = detail.match(/^(.+): (.+)\.$/);
-  if (m && ruleSetReasons[m[2]]) return `${ruleSetNames[m[1]] ?? m[1]}: ${ruleSetReasons[m[2]]}`;
-
-  if (detail.startsWith("ValidFrom must be later")) {
+    const [, name, reason] = detail.match(/^(.+): (.+)\.$/) ?? [];
+    if (name && reason && ruleSetReasons[reason]) return `${ruleSetNames[name] ?? name}: ${ruleSetReasons[reason]}`;
+  
+    if (detail.startsWith("ValidFrom must be later")) {
     return "Gyldig fra ligger for tidligt – der findes allerede et aktivt regelsæt med en senere startdato";
   }
 

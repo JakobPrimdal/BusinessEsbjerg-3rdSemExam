@@ -9,6 +9,7 @@ import { LoginPage } from "@/pages/LoginPage";
 import { MyBalancePage } from "@/pages/MyBalancePage";
 import { RuleSetsPage } from "@/pages/RuleSetsPage";
 import { CreateRuleSetPage} from "@/pages/CreateRuleSetPage";
+import {RequestHolidayPage} from "@/pages/RequestHolidayPage.tsx";
 
 export function App() {
   return (
@@ -27,6 +28,14 @@ export function App() {
                   </RequireRole>
                 }
               />
+                <Route
+                    path="/ferie/anmod"
+                    element={
+                        <RequireRole>
+                            <RequestHolidayPage />
+                        </RequireRole>
+                    }
+                />
               <Route
                 path="/admin/brugere"
                 element={

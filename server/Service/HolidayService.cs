@@ -8,7 +8,7 @@ namespace Service;
 
 public class HolidayService(HolidayDb db, TimeProvider clock)
 {
-    // Ledger line types (holiday_transaction.type)
+
     public const string EarnedType = "earned";     // + holiday earned in a month (the monthly job)
     public const string UsageType = "usage";       // - holiday taken: written when a request is approved
     public const string ReversalType = "reversal"; // + undoes a usage line (cancelled approved holiday, later)

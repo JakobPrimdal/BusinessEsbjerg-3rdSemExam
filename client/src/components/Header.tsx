@@ -15,6 +15,17 @@ export function Header() {
         <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
             <div className="flex items-center gap-6">
                 <span className="font-semibold">Business Esbjerg - Ferie</span>
+                
+                {user && (
+                    <nav className="flex items-center gap-4 text-sm">
+                        <NavLink to="/hjem" className={navClass}>
+                            Min ferie
+                        </NavLink>
+                        <NavLink to="/ferie/anmod" className={navClass}>
+                            Anmod om ferie
+                        </NavLink>
+                    </nav>
+                )}
                 {isAdmin && (
                     <nav className="flex items-center gap-4 text-sm">
                         <NavLink to="/admin/brugere" className={navClass}>
