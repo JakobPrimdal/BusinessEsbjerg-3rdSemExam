@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using Infrastructure.Entities; // ADDED
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -10,9 +11,13 @@ namespace Api.Controllers;
 public class HolidayController(
     HolidayService holidayService,
     HolidayRequestService requestService,
-    HolidayDecisionService decisionService) : ControllerBase
+    HolidayDecisionService decisionService,
+    HolidayCancellationService cancellationService) : ControllerBase 
 {
-    [Authorize]
+  
+    private const string Employee = nameof(UserRole.User);
+
+    [Authorize(Roles = Employee)] 
     [HttpGet("holiday/" + nameof(GetMyBalance))]
     public HolidayBalanceDTO GetMyBalance()
         => holidayService.GetBalance(CurrentUserId());
@@ -38,39 +43,38 @@ public class HolidayController(
         return Ok(new { month = HolidayService.FirstDayOfMonth(month), usersUpdated = count });
     }
 
-    [Authorize]
+    [Authorize(Roles = Employee)] 
     [HttpPost("holiday/" + nameof(PreviewRequest))]
     public HolidayRequestPreviewDTO PreviewRequest([FromBody] CreateHolidayRequestDTO dto)
         => requestService.Preview(CurrentUserId(), dto);
 
-    [Authorize]
+    [Authorize(Roles = Employee)] 
     [HttpPost("holiday/" + nameof(RequestHoliday))]
     public HolidayRequestDTO RequestHoliday([FromBody] CreateHolidayRequestDTO dto)
         => requestService.Create(CurrentUserId(), dto);
-
+    
     [Authorize(Roles = "Accountant")]
     [HttpGet("holiday/" + nameof(GetPendingRequests))]
     public List<PendingHolidayRequestDTO> GetPendingRequests()
         => decisionService.GetPending();
-
+    
     [Authorize(Roles = "Accountant")]
     [HttpPost("holiday/" + nameof(ApproveRequest) + "/{requestId:guid}")]
     public HolidayDecisionDTO ApproveRequest(Guid requestId)
         => decisionService.Approve(requestId, CurrentUserId());
-
+    
     [Authorize(Roles = "Accountant")]
     [HttpPost("holiday/" + nameof(DenyRequest) + "/{requestId:guid}")]
     public HolidayDecisionDTO DenyRequest(Guid requestId, [FromBody] DenyHolidayRequestDTO dto)
         => decisionService.Deny(requestId, CurrentUserId(), dto.Reason);
+    
 
-
-    [Authorize]
+    [Authorize(Roles = Employee)]
     [HttpGet("holiday/" + nameof(GetMyRequests))]
     public List<MyHolidayRequestDTO> GetMyRequests()
         => cancellationService.GetMyRequests(CurrentUserId());
-
-    // Pending: withdrawn right away. Approved and not started: sends a cancellation request
-    [Authorize]
+    
+    [Authorize(Roles = Employee)]
     [HttpPost("holiday/" + nameof(CancelRequest) + "/{requestId:guid}")]
     public HolidayCancellationDTO CancelRequest(Guid requestId)
         => cancellationService.Cancel(CurrentUserId(), requestId);

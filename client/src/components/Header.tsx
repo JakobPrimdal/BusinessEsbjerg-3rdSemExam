@@ -11,20 +11,26 @@ export function Header() {
     const { user, logout } = useAuth();
     const isAdmin = user?.role?.id === UserRole.Admin;
     const isAccountant = user?.role?.id === UserRole.Accountant;
+    const isEmployee = user?.role?.id === UserRole.User;
     
     return (
         <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
             <div className="flex items-center gap-6">
                 <span className="font-semibold">Business Esbjerg - Ferie</span>
-                
+
                 {user && (
                     <nav className="flex items-center gap-4 text-sm">
-                        <NavLink to="/hjem" className={navClass}>
-                            Min ferie
-                        </NavLink>
-                        <NavLink to="/ferie/anmod" className={navClass}>
-                            Anmod om ferie
-                        </NavLink>
+                        
+                        {isEmployee && (
+                            <>
+                                <NavLink to="/hjem" className={navClass}>
+                                    Min ferie
+                                </NavLink>
+                                <NavLink to="/ferie/anmod" className={navClass}>
+                                    Anmod om ferie
+                                </NavLink>
+                            </>
+                        )}
                         {isAccountant && (
                             <NavLink to="/ferie/anmodninger" className={navClass}>
                                 Anmodninger

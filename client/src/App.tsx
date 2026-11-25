@@ -24,7 +24,7 @@ export function App() {
               <Route
                 path="/hjem"
                 element={
-                  <RequireRole>
+                    <RequireRole role={UserRole.User}>
                     <MyBalancePage />
                   </RequireRole>
                 }
@@ -32,7 +32,7 @@ export function App() {
                 <Route
                     path="/ferie/anmod"
                     element={
-                        <RequireRole>
+                        <RequireRole role={UserRole.User}>
                             <RequestHolidayPage />
                         </RequireRole>
                     }

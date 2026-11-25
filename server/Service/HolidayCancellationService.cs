@@ -12,9 +12,7 @@ public class HolidayCancellationService(HolidayDb db, HolidayService holidayServ
     public const string CannotCancelError = "Kun ventende eller godkendte ferieanmodninger kan annulleres";
     public const string NotCancellationRequestedError = "Der er ingen ventende annullering for denne ferie";
     public const string StatusChangedError = "Ferieanmodningen er blevet ændret. Prøv igen";
-
-    // Employee 
-
+    
     public List<MyHolidayRequestDTO> GetMyRequests(string userId)
     {
         var today = Today();
@@ -37,7 +35,6 @@ public class HolidayCancellationService(HolidayDb db, HolidayService holidayServ
 
     public HolidayCancellationDTO Cancel(string userId, Guid requestId)
     {
-        // Another employee's request is "not found", so ids of other people's requests are not revealed
         var request = db.HolidayRequests.FirstOrDefault(r => r.Id == requestId && r.UserId == userId)
                       ?? throw new NotFoundException(RequestNotFoundError);
 
@@ -56,7 +53,6 @@ public class HolidayCancellationService(HolidayDb db, HolidayService holidayServ
 
     private HolidayCancellationDTO WithdrawPending(HolidayRequest request)
     {
-        // Only if it is still pending, so it can not be withdrawn while the accountant approves it
         var updated = db.HolidayRequests
             .Where(r => r.Id == request.Id && r.Status == HolidayRequestStatus.Pending)
             .Set(r => r.Status, HolidayRequestStatus.Cancelled)
@@ -85,8 +81,7 @@ public class HolidayCancellationService(HolidayDb db, HolidayService holidayServ
         return new HolidayCancellationDTO(request.Id, HolidayRequestStatus.CancellationRequested,
             HoursReturned: false, request.Hours);
     }
-
-    // Accountant 
+    
 
     public List<CancellationRequestDTO> GetCancellationRequests()
         => (from r in db.HolidayRequests
@@ -109,8 +104,7 @@ public class HolidayCancellationService(HolidayDb db, HolidayService holidayServ
             throw new BadRequestException(AlreadyStartedError);
 
         var now = clock.GetUtcNow().UtcDateTime;
-
-        // The status change and the reversal lines are saved together, or not at all
+        
         using var transaction = db.BeginTransaction();
         var updated = db.HolidayRequests
             .Where(r => r.Id == request.Id && r.Status == HolidayRequestStatus.CancellationRequested)
@@ -128,8 +122,7 @@ public class HolidayCancellationService(HolidayDb db, HolidayService holidayServ
         return new CancellationDecisionDTO(request.Id, HolidayRequestStatus.Cancelled, accountantId, now,
             Reason: null, returned);
     }
-
-    // The holiday stays approved, and the employee can read why
+    
     public CancellationDecisionDTO DenyCancellation(Guid requestId, string accountantId, string? reason)
     {
         var validReason = HolidayDecisionService.ValidateReason(reason);

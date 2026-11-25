@@ -339,6 +339,9 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
         
         EnsureUserExists(dto.UserId);
         
+        if (!db.Users.Any(u => u.UserId == dto.UserId && u.Role == UserRole.User))
+            throw new BadRequestException(EmployeeOnlyError);
+        
         decimal[] days = [dto.MonHours, dto.TueHours, dto.WedHours, dto.ThuHours, dto.FriHours, dto.SatHours, dto.SunHours];
         if (days.Any(h => h < 0 || h > 24))
             throw new BadRequestException("Hours per day must be between 0 and 24");
@@ -379,7 +382,6 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
     public static DateOnly EndOfHolidayYear(DateOnly date)
         => HolidayYearStart(date).AddYears(1).AddDays(-1);
     
-    // 'AccountStart' is the earning start of the account the hours belong to
     public record EarnedLot(DateOnly UsableFrom, DateOnly UsableTo, decimal Hours, DateOnly AccountStart = default);
 
     // Part of a holiday taken from one account
@@ -432,7 +434,6 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
     private static (List<OpenLot> Open, decimal Debt) Simulate(
         IEnumerable<EarnedLot> earned, IEnumerable<PlannedUse> planned, DateOnly date)
     {
-        // On the same day a lot becomes usable before planned holiday uses hours
         var events = earned
             .Where(l => l.UsableFrom <= date)
             .Select(l => (Date: l.UsableFrom, Order: 0, Lot: l, Use: (PlannedUse?)null))
@@ -611,8 +612,7 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
             TransactionDate = DateOnly.FromDateTime(now),
             PeriodMonth = month,
             WeeklyHoursUsed = weeklyHours,
-
-            // Reference to the ruleset used for this transaction
+            
             RuleValidFrom = ruleSet.ValidFrom,
 
             Reason = "Monthly holiday",
