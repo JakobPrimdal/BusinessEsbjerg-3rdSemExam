@@ -183,7 +183,36 @@ docker run --rm \
 ## Running using docker compose
 #### Running the complete application in separate containers using docker compose
 
-* TBA
+The Docker Compose file expects the same `JWT_SECRET`, `ADMIN_USERNAME` and `ADMIN_PASSWORD` as any of the other ways to run this project.
+
+This can be done in two ways:
+
+1. The first option is to include the secrets in the docker compose command, similarly to if you want to run any of docker files singularly, use this command:
+
+```bash
+JWT_SECRET="your-jwt-secret" \
+ADMIN_USERNAME="your-admin-username" \
+ADMIN_PASSWORD="your-admin-password" \
+docker compose up --build
+```
+
+2. The second option is to create a .env file in the project root, next to the `/client` and `/server` directories, to hold the secrets in there. Use this as the contents of the .env file:
+
+```
+JWT_SECRET="your-jwt-secret" \
+ADMIN_USERNAME="your-admin-username" \
+ADMIN_PASSWORD="your-admin-password" \
+```
+
+Docker Compose reads the .env file automatically, so if you choose the second option you will be able to then just run a plain docker compose command. Use this command:
+
+```bash
+docker compose up --build
+```
+
+Docker Compose looks for both ways to set your secrets, which allows you to use either option.
+There is an order to in which place Docker Compose looks for your secrets first. 
+Firstly it will look for the secrets inline in the docker command, and if it doesn't find them, it will go on to look for the .env file.
 
 
 ## Testing
