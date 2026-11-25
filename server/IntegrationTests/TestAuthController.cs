@@ -287,6 +287,8 @@ public class TestAuthController(WebApplicationFactory<Program> factory) : IClass
     [InlineData("GET", "/GetMe")]
     [InlineData("GET", "/AdminCheck")]
     [InlineData("POST", "/Register")]
+    [InlineData("GET", "/activitylog/GetActivityLog")]
+    [InlineData("GET", "/activitylog/GetUsers")]
     public async Task ProtectedEndpoints_WithoutLogin_Return401(string method, string path)
     {
         // Arrange: _client has not logged in
@@ -318,6 +320,24 @@ public class TestAuthController(WebApplicationFactory<Program> factory) : IClass
 
         // Assert
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+    
+    // Activity log
+
+    [Fact]
+    public async Task ActivityLog_AsAdmin_Returns200WithAPage()
+    {
+        // Arrange
+        await LoginAsAdminAsync();
+
+        // Act
+        var response = await _client.GetAsync("/activitylog/GetActivityLog?page=1");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var page = await response.Content.ReadFromJsonAsync<ActivityLogPageDTO>();
+        Assert.NotNull(page);
+        Assert.Equal(1, page.Page);
     }
 
     // OpenAPI tests
