@@ -61,6 +61,8 @@ This separation means that the business logic does not need to know how the data
 
 ### Frontend Architecture
 
+* TBA
+
 
 ## Branching strategies
 
@@ -112,7 +114,7 @@ dotnet user-secrets set "Admin:Username" "your-admin-username"` `dotnet user-sec
 The SQLite database (`db.db`) is created automatically in `server/API` on first run.
 The API runs on localhost:5194
 
-### Running the backend with Docker
+### Running the backend in a container with Docker
 
 (The Dockerfile expects `Jwt__Secret`, `Admin_Username`, `Admin__Password`, and `Cors__Origins__0` as an environment variables.)
 
@@ -139,6 +141,7 @@ docker run --rm --name business-esb-backend -p 127.0.0.1:4000:4000 \
 0. To the frontend of this application in production you will need to create a `client/.env.production` file to contain you backend api call.
 Use this: `BUN_PUBLIC_API_URL=your-backend-api`
 
+
 1. Install dependencies:
 
 ```bash
@@ -156,6 +159,60 @@ bun run dev
 ```bash
 bun run start
 ```
+
+
+### Running the frontend in a container with Docker
+
+(The Docker file expects you to have made the .env.production file from step 0 under 'Running frontend locally'')
+
+1. Build an image of the frontend.
+Use this command:
+```bash
+docker build -t business-esb-frontend .
+ ```
+
+2. Run the image.
+Use this command:
+```bash
+docker run --rm \
+  --name business-esb-frontend \
+  -p 3000:3000 \
+  business-esb-frontend
+```
+
+## Running using docker compose
+#### Running the complete application in separate containers using docker compose
+
+The Docker Compose file expects the same `JWT_SECRET`, `ADMIN_USERNAME` and `ADMIN_PASSWORD` as any of the other ways to run this project.
+
+This can be done in two ways:
+
+1. The first option is to include the secrets in the docker compose command, similarly to if you want to run any of docker files singularly, use this command:
+
+```bash
+JWT_SECRET="your-jwt-secret" \
+ADMIN_USERNAME="your-admin-username" \
+ADMIN_PASSWORD="your-admin-password" \
+docker compose up --build
+```
+
+2. The second option is to create a .env file in the project root, next to the `/client` and `/server` directories, to hold the secrets in there. Use this as the contents of the .env file:
+
+```
+JWT_SECRET="your-jwt-secret" \
+ADMIN_USERNAME="your-admin-username" \
+ADMIN_PASSWORD="your-admin-password" \
+```
+
+Docker Compose reads the .env file automatically, so if you choose the second option you will be able to then just run a plain docker compose command. Use this command:
+
+```bash
+docker compose up --build
+```
+
+Docker Compose looks for both ways to set your secrets, which allows you to use either option.
+There is an order to in which place Docker Compose looks for your secrets first. 
+Firstly it will look for the secrets inline in the docker command, and if it doesn't find them, it will go on to look for the .env file.
 
 
 ## Testing

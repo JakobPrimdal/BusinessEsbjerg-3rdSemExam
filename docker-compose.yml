@@ -1,0 +1,31 @@
+services:
+  backend:
+    build: ./server
+    container_name: business-esb-backend
+    ports:
+      - "4000:4000"
+    environment:
+      ConnectionStrings__Db: "Data Source=/app/data/db.db;Foreign Keys=True"
+      Cors__Origins__0: "http://localhost:3000"
+      Jwt__Issuer: "business-esb-server"
+      Jwt__Audience: "business-esb-client"
+      Jwt__Secret: ${JWT_SECRET}
+      Admin__Username: ${ADMIN_USERNAME}
+      Admin__Password: ${ADMIN_PASSWORD}
+    volumes:
+      - db-data:/app/data
+    restart: unless-stopped
+
+  frontend:
+    build: ./client
+    container_name: business-esb-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      BUN_PUBLIC_API_URL: "http://localhost:4000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  db-data:
