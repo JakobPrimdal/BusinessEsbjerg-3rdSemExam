@@ -144,7 +144,6 @@ using (var scope = app.Services.CreateScope())
     holidayDb.CreateTable<HolidayAccount>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayTransaction>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayRequest>(tableOptions: TableOptions.CreateIfNotExists);
-    DbInitializer.HolidayRequestDbInitialize(holidayDb);
     holidayDb.CreateTable<ActivityLog>(tableOptions: TableOptions.CreateIfNotExists);
     
     // Development only: demo employee with holiday data (login: employee / password).
