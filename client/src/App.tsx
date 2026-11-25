@@ -11,6 +11,7 @@ import { RuleSetsPage } from "@/pages/RuleSetsPage";
 import { CreateRuleSetPage} from "@/pages/CreateRuleSetPage";
 import {RequestHolidayPage} from "@/pages/RequestHolidayPage.tsx";
 import {PendingRequestsPage} from "@/pages/PendingRequestPage.tsx";
+import { ActivityLogPage } from "@/pages/ActivityLogPage";
 
 export function App() {
   return (
@@ -66,6 +67,14 @@ export function App() {
                 element={
                     <RequireRole role={UserRole.Admin}>
                       <CreateRuleSetPage />
+                    </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/log"
+                element={
+                    <RequireRole role={UserRole.Admin}>
+                      <ActivityLogPage />
                     </RequireRole>
                 }
               />

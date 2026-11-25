@@ -1,5 +1,7 @@
+using Infrastructure;
 using Infrastructure.Entities;
 using Infrastructure.Interfaces;
+using LinqToDB;
 using Service;
 using Service.DTOs;
 using Service.Interfaces;
@@ -12,6 +14,8 @@ public class DemoDataSeeder(
     ILoginDb loginDb,
     IPasswordHasher passwordHasher,
     HolidayService holidayService,
+    HolidayDb holidayDb,
+    IConfiguration configuration,
     TimeProvider clock,
     ILogger<DemoDataSeeder> logger)
 {
@@ -54,5 +58,38 @@ public class DemoDataSeeder(
 
         if (added > 0)
             logger.LogInformation("Demo employee '{Username}': holiday earned for {Count} month(s)", Username, added);
+
+        await SeedActivityLogAsync(user);
+    }
+
+    // Example log rows spread over the last weeks, so the activity log page and its filters
+    // can be tried before the real actions write logs. Only added while the log is empty.
+    private async Task SeedActivityLogAsync(User employee)
+    {
+        if (holidayDb.ActivityLogs.Any())
+            return;
+
+        var adminName = configuration["Admin:Username"]?.Trim() ?? "";
+        var admin = await loginDb.GetUserByUsernameAsync(adminName);
+        var now = clock.GetUtcNow().UtcDateTime;
+
+        void Add(User? who, int daysAgo, string action, string details) => holidayDb.Insert(new ActivityLog
+        {
+            Id = Guid.NewGuid(),
+            UserId = who?.UserId,
+            Username = who?.Username ?? ActivityLogService.SystemUsername,
+            Action = action,
+            Details = details,
+            CreatedAt = now.AddDays(-daysAgo)
+        });
+
+        Add(admin, 20, ActivityLogActions.UserCreated, $"Oprettede brugeren {employee.Username} (Medarbejder)");
+        Add(admin, 20, ActivityLogActions.WorkHoursAdded, $"Registrerede arbejdstid for {employee.Username}: 37 timer/uge fra 01.09.2025");
+        Add(null, 14, ActivityLogActions.MonthlyHolidayAdded, "Månedlig ferie optjent for 1 bruger");
+        Add(employee, 6, ActivityLogActions.HolidayRequested, "Anmodede om ferie 22.12.2026–31.12.2026 (uge 1–5)");
+        Add(admin, 3, ActivityLogActions.RuleSetCreated, "Oprettede regelsæt gældende fra 01.09.2027");
+        Add(admin, 1, ActivityLogActions.RuleSetToggled, "Deaktiverede regelsæt gældende fra 01.09.2027");
+
+        logger.LogInformation("Demo activity log rows added");
     }
 }

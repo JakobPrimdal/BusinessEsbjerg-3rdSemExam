@@ -16,6 +16,32 @@ export enum UserRole {
   Admin = 2,
 }
 
+export interface ActivityLogPageDTO {
+  items?: ActivityLogDTO[];
+  /** @format int32 */
+  totalCount?: number;
+  /** @format int32 */
+  page?: number;
+  /** @format int32 */
+  pageSize?: number;
+}
+
+export interface ActivityLogDTO {
+  /** @format guid */
+  id?: string;
+  userId?: string | null;
+  username?: string;
+  action?: string;
+  details?: string;
+  /** @format date-time */
+  createdAt?: string;
+}
+
+export interface ActivityLogUserDTO {
+  userId?: string;
+  username?: string;
+}
+
 export interface UserDTO {
   userId?: string;
   username?: string;
@@ -610,6 +636,56 @@ export class HttpClient<SecurityDataType = unknown> {
 export class Api<
   SecurityDataType extends unknown,
 > extends HttpClient<SecurityDataType> {
+  activityLog = {
+    /**
+     * No description
+     *
+     * @tags ActivityLog
+     * @name ActivityLogGetActivityLog
+     * @request GET:/activitylog/GetActivityLog
+     * @secure
+     */
+    activityLogGetActivityLog: (
+      query?: {
+        userId?: string | null;
+        /** @format date-time */
+        from?: string | null;
+        /** @format date-time */
+        to?: string | null;
+        /**
+         * @format int32
+         * @default 1
+         */
+        page?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<ActivityLogPageDTO, any>({
+        path: `/activitylog/GetActivityLog`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags ActivityLog
+     * @name ActivityLogGetUsers
+     * @request GET:/activitylog/GetUsers
+     * @secure
+     */
+    activityLogGetUsers: (params: RequestParams = {}) =>
+      this.request<ActivityLogUserDTO[], any>({
+        path: `/activitylog/GetUsers`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+  };
   auth = {
     /**
      * No description

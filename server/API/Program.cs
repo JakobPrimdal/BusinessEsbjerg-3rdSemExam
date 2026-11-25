@@ -41,6 +41,8 @@ builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddScoped<IHolidayRuleSetService, HolidayRuleSetService>();
+builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
+
 
 // Admin seeder
 builder.Services.AddScoped<AdminSeeder>();
@@ -143,6 +145,8 @@ using (var scope = app.Services.CreateScope())
     holidayDb.CreateTable<HolidayTransaction>(tableOptions: TableOptions.CreateIfNotExists);
     holidayDb.CreateTable<HolidayRequest>(tableOptions: TableOptions.CreateIfNotExists);
     DbInitializer.HolidayRequestDbInitialize(holidayDb);
+    holidayDb.CreateTable<ActivityLog>(tableOptions: TableOptions.CreateIfNotExists);
+    
     // Development only: demo employee with holiday data (login: employee / password).
     // Never runs in production, so these credentials are not in the cloud database.
     if (app.Environment.IsDevelopment())
