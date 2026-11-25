@@ -23,7 +23,8 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
     private const decimal FullTimeWeeklyHours = 37m;
     
     public const int HourDecimals = 2;
-
+    public const string EmployeeOnlyError = "Work hours can only be added to employee accounts"; 
+    
     public static decimal RoundHours(decimal hours)
         => Math.Round(hours, HourDecimals, MidpointRounding.AwayFromZero);
 
