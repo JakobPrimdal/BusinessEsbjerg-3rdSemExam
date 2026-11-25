@@ -148,6 +148,41 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
             });
         }
     }
+    
+    // gives back the hours of an approved request when its cancellation is approved
+    public decimal RecordReversal(HolidayRequest request, string decidedBy)
+    {
+        var lines = db.HolidayTransactions
+            .Where(t => t.HolidayRequestId == request.Id && (t.Type == UsageType || t.Type == ReversalType))
+            .ToList();
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        decimal returned = 0;
+        foreach (var perAccount in lines.GroupBy(t => t.HolidayAccountId))
+        {
+            // what is still used on this account (a usage line is negative)
+            var stillUsed = -perAccount.Sum(t => t.Hours);
+            if (stillUsed <= 0)
+                continue;
+
+            db.Insert(new HolidayTransaction
+            {
+                Id = Guid.NewGuid(),
+                HolidayAccountId = perAccount.Key,
+                UserId = request.UserId,
+                Type = ReversalType,
+                Hours = stillUsed,
+                TransactionDate = request.StartDate,
+                PeriodMonth = null,
+                Reason = $"Cancelled holiday {request.StartDate:yyyy-MM-dd} - {request.EndDate:yyyy-MM-dd}",
+                CreatedBy = decidedBy,
+                HolidayRequestId = request.Id,
+                CreatedAt = now
+            });
+            returned += stillUsed;
+        }
+        return RoundHours(returned);
+    }
 
     private List<PlannedUse> ApprovedUses(string userId, string holidayType)
         => (from t in db.HolidayTransactions
