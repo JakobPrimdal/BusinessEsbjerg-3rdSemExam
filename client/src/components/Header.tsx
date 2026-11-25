@@ -40,6 +40,9 @@ export function Header() {
                         <NavLink to="/admin/regler" className={navClass}>
                             Regler
                         </NavLink>
+                            <NavLink to="/admin/log" className={navClass}>
+                            Aktivitetslog
+                        </NavLink>
                     </nav>
                 )}
             </div>

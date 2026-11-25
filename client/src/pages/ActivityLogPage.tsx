@@ -96,7 +96,7 @@ export function ActivityLogPage() {
         <div className="w-full max-w-5xl space-y-6">
             <div>
                 <h1 className="text-2xl font-semibold">Aktivitetslog</h1>
-                <p className="text-muted-foreground">Hvem har ændret hvad og hvornår. Loggen kan ikke redigeres eller slettes.</p>
+                <p className="text-muted-foreground">Hvem har ændret hvad og hvornår.</p>
             </div>
 
             <Card>
