@@ -709,6 +709,8 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
             week6Hours);
     }
 
+    public HolidayRuleSet? RuleSetOn(DateOnly date) => FindRuleSet(date);
+    
     public decimal? RuleValueOn(string key, DateOnly date)
     {
         var ruleSet = FindRuleSet(date);

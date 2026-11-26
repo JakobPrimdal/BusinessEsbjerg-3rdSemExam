@@ -5,17 +5,20 @@ public record CreateHolidayRequestDTO(
     DateOnly EndDate,
     string HolidayType);
 
+// A broken holiday rule that does not block the request
+public record HolidayRuleWarningDTO(
+    string Code,            // HolidayRequestService.ShortNoticeWarning or MainHolidayWarning
+    string Message);
+
 public record HolidayRequestPreviewDTO(
     int WorkingDays,
     decimal Hours,          // what the request costs
     decimal BalanceBefore,  // projected balance on the start date before this request
     decimal BalanceAfter,   // after it (negative means holiday debt)
-    decimal MaxDebt,        
-    bool CanRequest,
-    string? Error,
-    bool ShortNotice,       // warning starts sooner than the notice period
-    int NoticeMonths);      // the notice period that applies (3 for main/summer holiday, 1 for other holiday)
-
+    decimal MaxDebt,        // 0 for week 6: it can not be taken in advance
+    bool CanRequest,        // false when Error is set
+    string? Error,          // a broken rule that blocks the request
+    List<HolidayRuleWarningDTO> Warnings);
 
 public record HolidayRequestDTO(
     Guid Id,
@@ -25,8 +28,7 @@ public record HolidayRequestDTO(
     decimal Hours,
     string Status,
     DateTime CreatedAt,
-    bool ShortNotice,
-    int NoticeMonths);
+    List<HolidayRuleWarningDTO> Warnings);
 
 public record PendingHolidayRequestDTO(
     Guid Id,
@@ -37,9 +39,10 @@ public record PendingHolidayRequestDTO(
     DateOnly EndDate,
     decimal Hours,
     DateTime CreatedAt,
-    decimal BalanceBefore,  
-    decimal BalanceAfter,   
-    string? Problem);      
+    decimal BalanceBefore,
+    decimal BalanceAfter,
+    string? Problem,        // blocks approval
+    List<HolidayRuleWarningDTO> Warnings); // shown to the accountant, approval is still possible
 
 public record DenyHolidayRequestDTO(string? Reason);
 
