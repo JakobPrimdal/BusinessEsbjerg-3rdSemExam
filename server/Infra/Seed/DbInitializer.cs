@@ -23,4 +23,5 @@ public static class DbInitializer
         db.CreateTable<HolidayRuleSet>(tableOptions: TableOptions.CreateIfNotExists);
         HolidayRuleSetSeeder.Seed(db, tp);
     }
+    
 }

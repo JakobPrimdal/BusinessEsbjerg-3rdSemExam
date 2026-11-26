@@ -23,7 +23,8 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
     private const decimal FullTimeWeeklyHours = 37m;
     
     public const int HourDecimals = 2;
-
+    public const string EmployeeOnlyError = "Work hours can only be added to employee accounts"; 
+    
     public static decimal RoundHours(decimal hours)
         => Math.Round(hours, HourDecimals, MidpointRounding.AwayFromZero);
 
@@ -147,6 +148,41 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
                 CreatedAt = now
             });
         }
+    }
+    
+    // gives back the hours of an approved request when its cancellation is approved
+    public decimal RecordReversal(HolidayRequest request, string decidedBy)
+    {
+        var lines = db.HolidayTransactions
+            .Where(t => t.HolidayRequestId == request.Id && (t.Type == UsageType || t.Type == ReversalType))
+            .ToList();
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        decimal returned = 0;
+        foreach (var perAccount in lines.GroupBy(t => t.HolidayAccountId))
+        {
+            // what is still used on this account (a usage line is negative)
+            var stillUsed = -perAccount.Sum(t => t.Hours);
+            if (stillUsed <= 0)
+                continue;
+
+            db.Insert(new HolidayTransaction
+            {
+                Id = Guid.NewGuid(),
+                HolidayAccountId = perAccount.Key,
+                UserId = request.UserId,
+                Type = ReversalType,
+                Hours = stillUsed,
+                TransactionDate = request.StartDate,
+                PeriodMonth = null,
+                Reason = $"Cancelled holiday {request.StartDate:yyyy-MM-dd} - {request.EndDate:yyyy-MM-dd}",
+                CreatedBy = decidedBy,
+                HolidayRequestId = request.Id,
+                CreatedAt = now
+            });
+            returned += stillUsed;
+        }
+        return RoundHours(returned);
     }
 
     private List<PlannedUse> ApprovedUses(string userId, string holidayType)
@@ -304,6 +340,9 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
         
         EnsureUserExists(dto.UserId);
         
+        if (!db.Users.Any(u => u.UserId == dto.UserId && u.Role == UserRole.User))
+            throw new BadRequestException(EmployeeOnlyError);
+        
         decimal[] days = [dto.MonHours, dto.TueHours, dto.WedHours, dto.ThuHours, dto.FriHours, dto.SatHours, dto.SunHours];
         if (days.Any(h => h < 0 || h > 24))
             throw new BadRequestException("Hours per day must be between 0 and 24");
@@ -344,7 +383,6 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
     public static DateOnly EndOfHolidayYear(DateOnly date)
         => HolidayYearStart(date).AddYears(1).AddDays(-1);
     
-    // 'AccountStart' is the earning start of the account the hours belong to
     public record EarnedLot(DateOnly UsableFrom, DateOnly UsableTo, decimal Hours, DateOnly AccountStart = default);
 
     // Part of a holiday taken from one account
@@ -397,7 +435,6 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
     private static (List<OpenLot> Open, decimal Debt) Simulate(
         IEnumerable<EarnedLot> earned, IEnumerable<PlannedUse> planned, DateOnly date)
     {
-        // On the same day a lot becomes usable before planned holiday uses hours
         var events = earned
             .Where(l => l.UsableFrom <= date)
             .Select(l => (Date: l.UsableFrom, Order: 0, Lot: l, Use: (PlannedUse?)null))
@@ -576,8 +613,7 @@ public class HolidayService(HolidayDb db, TimeProvider clock)
             TransactionDate = DateOnly.FromDateTime(now),
             PeriodMonth = month,
             WeeklyHoursUsed = weeklyHours,
-
-            // Reference to the ruleset used for this transaction
+            
             RuleValidFrom = ruleSet.ValidFrom,
 
             Reason = "Monthly holiday",

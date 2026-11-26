@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using Infrastructure.Entities; // ADDED
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -10,9 +11,13 @@ namespace Api.Controllers;
 public class HolidayController(
     HolidayService holidayService,
     HolidayRequestService requestService,
-    HolidayDecisionService decisionService) : ControllerBase
+    HolidayDecisionService decisionService,
+    HolidayCancellationService cancellationService) : ControllerBase 
 {
-    [Authorize]
+  
+    private const string Employee = nameof(UserRole.User);
+
+    [Authorize(Roles = Employee)] 
     [HttpGet("holiday/" + nameof(GetMyBalance))]
     public HolidayBalanceDTO GetMyBalance()
         => holidayService.GetBalance(CurrentUserId());
@@ -38,12 +43,12 @@ public class HolidayController(
         return Ok(new { month = HolidayService.FirstDayOfMonth(month), usersUpdated = count });
     }
 
-    [Authorize]
+    [Authorize(Roles = Employee)] 
     [HttpPost("holiday/" + nameof(PreviewRequest))]
     public HolidayRequestPreviewDTO PreviewRequest([FromBody] CreateHolidayRequestDTO dto)
         => requestService.Preview(CurrentUserId(), dto);
 
-    [Authorize]
+    [Authorize(Roles = Employee)] 
     [HttpPost("holiday/" + nameof(RequestHoliday))]
     public HolidayRequestDTO RequestHoliday([FromBody] CreateHolidayRequestDTO dto)
         => requestService.Create(CurrentUserId(), dto);
@@ -62,6 +67,32 @@ public class HolidayController(
     [HttpPost("holiday/" + nameof(DenyRequest) + "/{requestId:guid}")]
     public HolidayDecisionDTO DenyRequest(Guid requestId, [FromBody] DenyHolidayRequestDTO dto)
         => decisionService.Deny(requestId, CurrentUserId(), dto.Reason);
+    
+
+    [Authorize(Roles = Employee)]
+    [HttpGet("holiday/" + nameof(GetMyRequests))]
+    public List<MyHolidayRequestDTO> GetMyRequests()
+        => cancellationService.GetMyRequests(CurrentUserId());
+    
+    [Authorize(Roles = Employee)]
+    [HttpPost("holiday/" + nameof(CancelRequest) + "/{requestId:guid}")]
+    public HolidayCancellationDTO CancelRequest(Guid requestId)
+        => cancellationService.Cancel(CurrentUserId(), requestId);
+
+    [Authorize(Roles = "Accountant")]
+    [HttpGet("holiday/" + nameof(GetCancellationRequests))]
+    public List<CancellationRequestDTO> GetCancellationRequests()
+        => cancellationService.GetCancellationRequests();
+
+    [Authorize(Roles = "Accountant")]
+    [HttpPost("holiday/" + nameof(ApproveCancellation) + "/{requestId:guid}")]
+    public CancellationDecisionDTO ApproveCancellation(Guid requestId)
+        => cancellationService.ApproveCancellation(requestId, CurrentUserId());
+
+    [Authorize(Roles = "Accountant")]
+    [HttpPost("holiday/" + nameof(DenyCancellation) + "/{requestId:guid}")]
+    public CancellationDecisionDTO DenyCancellation(Guid requestId, [FromBody] DenyCancellationDTO dto)
+        => cancellationService.DenyCancellation(requestId, CurrentUserId(), dto.Reason);
 
     private string CurrentUserId()
         => HttpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;

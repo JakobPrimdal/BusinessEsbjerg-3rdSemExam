@@ -15,6 +15,10 @@ public class HolidayRequest
     public DateTime? DecidedAt { get; set; }
     public string? DecisionReason { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? CancellationRequestedAt { get; set; }
+    public string? CancellationDecidedBy { get; set; }
+    public DateTime? CancellationDecidedAt { get; set; }
+    public string? CancellationDecisionReason { get; set; }
 }
 
 public static class HolidayRequestStatus
@@ -23,7 +27,7 @@ public static class HolidayRequestStatus
     public const string Approved = "approved";
     public const string Denied = "denied";
     public const string Cancelled = "cancelled";
-
-    // pending and approved requests count as planned holiday
-    public static readonly string[] Active = [Pending, Approved];
-}
+    
+    public const string CancellationRequested = "cancellation_requested";
+    
+    public static readonly string[] Active = [Pending, Approved, CancellationRequested];}

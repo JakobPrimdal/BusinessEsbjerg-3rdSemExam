@@ -35,6 +35,7 @@ builder.Services.AddScoped<AuthService>();
 
 builder.Services.AddScoped<HolidayRequestService>();
 builder.Services.AddScoped<HolidayDecisionService>();
+builder.Services.AddScoped<HolidayCancellationService>();
 
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
