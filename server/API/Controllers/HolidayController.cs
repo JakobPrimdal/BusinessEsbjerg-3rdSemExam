@@ -71,18 +71,21 @@ public class HolidayController(
         return Ok(closedDayService.GetAllClosedDays());
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost("holiday/" + nameof(CreateClosedDay))]
     public ActionResult<ClosedDayResponseDTO> CreateClosedDay([FromBody] ClosedDayRequestDTO dto)
     {
         return closedDayService.CreateClosedDay(dto);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost("holiday/" + nameof(UpdateClosedDay))]
     public ActionResult<ClosedDayResponseDTO> UpdateClosedDay(Guid id, [FromBody] ClosedDayRequestDTO dto)
     {
         return closedDayService.UpdateClosedDay(id, dto);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost("holiday/" + nameof(ToggleDelete))]
     public ActionResult<ClosedDayResponseDTO> ToggleDelete(Guid id)
     {

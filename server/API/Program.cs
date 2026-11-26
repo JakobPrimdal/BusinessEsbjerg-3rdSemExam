@@ -36,6 +36,8 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<HolidayRequestService>();
 builder.Services.AddScoped<HolidayDecisionService>();
 
+builder.Services.AddScoped<ClosedDayService>();
+
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
@@ -133,6 +135,7 @@ using (var scope = app.Services.CreateScope())
     
     var holidayDb = scope.ServiceProvider.GetRequiredService<HolidayDb>();
     DbInitializer.HolidayRuleSetDbInitialize(holidayDb, scope.ServiceProvider.GetRequiredService<TimeProvider>());
+    DbInitializer.HolidayDbInitialize(holidayDb, scope.ServiceProvider.GetRequiredService<TimeProvider>());
     
     // Seed initial admin user
     var adminSeeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
