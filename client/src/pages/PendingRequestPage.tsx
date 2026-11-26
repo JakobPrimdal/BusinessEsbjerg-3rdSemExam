@@ -3,6 +3,8 @@ import type { PendingHolidayRequestDTO } from "@/api/Api";
 import { api } from "@/api/client";
 import { errorMessage } from "@/api/errors";
 import { formatDate, formatHours, typeLabel } from "@/holiday/balance";
+import { warningsOf } from "@/holiday/warnings";
+import { InlineRuleWarnings } from "@/components/RuleWarnings";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,7 +75,10 @@ export function PendingRequestsPage() {
         <Card className="w-full max-w-5xl">
             <CardHeader>
                 <CardTitle>Ferieanmodninger</CardTitle>
-                <CardDescription>Ældste først. Saldoen er medarbejderens saldo ved feriens start, hvis du godkender.</CardDescription>
+                <CardDescription>
+                    Ældste først. Saldoen er medarbejderens saldo ved feriens start, hvis du godkender. Røde fejl
+                    forhindrer godkendelse, advarsler er op til dig.
+                </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
                 {error && (
@@ -113,6 +118,7 @@ export function PendingRequestsPage() {
                                         <TableCell>
                                             {formatDate(r.startDate)} - {formatDate(r.endDate)}
                                             {r.problem && <p className="text-sm text-destructive">{r.problem}</p>}
+                                            <InlineRuleWarnings warnings={warningsOf(r.warnings)} />
                                         </TableCell>
                                         <TableCell>{typeLabel(r.holidayType ?? "")}</TableCell>
                                         <TableCell className="text-right">{formatHours(r.hours ?? 0)}</TableCell>

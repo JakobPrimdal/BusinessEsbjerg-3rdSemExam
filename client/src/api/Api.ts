@@ -136,9 +136,12 @@ export interface HolidayRequestPreviewDTO {
   maxDebt?: number;
   canRequest?: boolean;
   error?: string | null;
-  shortNotice?: boolean;
-  /** @format int32 */
-  noticeMonths?: number;
+  warnings?: HolidayRuleWarningDTO[];
+}
+
+export interface HolidayRuleWarningDTO {
+  code?: string;
+  message?: string;
 }
 
 export interface CreateHolidayRequestDTO {
@@ -162,9 +165,7 @@ export interface HolidayRequestDTO {
   status?: string;
   /** @format date-time */
   createdAt?: string;
-  shortNotice?: boolean;
-  /** @format int32 */
-  noticeMonths?: number;
+  warnings?: HolidayRuleWarningDTO[];
 }
 
 export interface PendingHolidayRequestDTO {
@@ -186,6 +187,7 @@ export interface PendingHolidayRequestDTO {
   /** @format decimal */
   balanceAfter?: number;
   problem?: string | null;
+  warnings?: HolidayRuleWarningDTO[];
 }
 
 export interface HolidayDecisionDTO {
