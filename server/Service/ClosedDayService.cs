@@ -57,7 +57,7 @@ public class ClosedDayService(HolidayDb db) : IClosedDayService
         return ToResponse(closedDay);
     }
 
-    public void ToggleIsDeleted(Guid id)
+    public ClosedDayResponseDTO ToggleIsDeleted(Guid id)
     {
         var closedDay = db.ClosedDays.FirstOrDefault(cd => cd.Id == id)
             ?? throw new NotFoundException("Closed day with id " + id + " was not found");
@@ -67,6 +67,7 @@ public class ClosedDayService(HolidayDb db) : IClosedDayService
 
         db.Update(closedDay);
 
+        return ToResponse(closedDay);
     }
     
     private ClosedDayResponseDTO ToResponse(ClosedDay entity)

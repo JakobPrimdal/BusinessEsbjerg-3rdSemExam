@@ -10,5 +10,5 @@ public interface IClosedDayService
 
     public ClosedDayResponseDTO UpdateClosedDay(Guid id, ClosedDayRequestDTO dto);
 
-    public void ToggleIsDeleted(Guid id);
+    public ClosedDayResponseDTO ToggleIsDeleted(Guid id);
 }
