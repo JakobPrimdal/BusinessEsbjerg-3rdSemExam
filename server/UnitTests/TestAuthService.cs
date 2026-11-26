@@ -1,4 +1,5 @@
 using Infrastructure.Entities;
+using Infrastructure.Entities.Enums;
 using Infrastructure.Interfaces;
 using NSubstitute;
 using Service;

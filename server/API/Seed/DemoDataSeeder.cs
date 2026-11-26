@@ -1,5 +1,6 @@
 using Infrastructure;
 using Infrastructure.Entities;
+using Infrastructure.Entities.Enums;
 using Infrastructure.Interfaces;
 using LinqToDB;
 using Service;

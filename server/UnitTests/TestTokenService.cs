@@ -1,5 +1,6 @@
 using System.Text;
 using Infrastructure.Entities;
+using Infrastructure.Entities.Enums;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Service.Security;

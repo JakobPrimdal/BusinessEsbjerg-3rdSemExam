@@ -1,3 +1,4 @@
+using Infrastructure.Entities.Enums;
 using LinqToDB.Mapping;
 
 namespace Infrastructure.Entities;

@@ -1,4 +1,4 @@
-using Infrastructure.Entities;
+using Infrastructure.Entities.Enums;
 
 namespace Service.DTOs;
 

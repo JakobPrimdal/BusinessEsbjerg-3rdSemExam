@@ -1,4 +1,6 @@
-namespace IntegrationTests.Controllers;
+using Infrastructure.Entities.Enums;
+
+namespace IntegrationTests;
 
 using System.Net;
 using System.Net.Http.Json;

@@ -1,5 +1,6 @@
 ﻿using Infrastructure;
 using Infrastructure.Entities;
+using Infrastructure.Entities.Enums;
 using LinqToDB;
 using Microsoft.Data.Sqlite;
 using Service;

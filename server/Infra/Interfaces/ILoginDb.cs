@@ -1,5 +1,5 @@
 using Infrastructure.Entities;
-using LinqToDB;
+using Infrastructure.Entities.Enums;
 
 namespace Infrastructure.Interfaces;
 
