@@ -28,6 +28,6 @@ public static class DbInitializer
     public static void HolidayDbInitialize(HolidayDb db, TimeProvider tp)
     {
         db.CreateTable<ClosedDay>(tableOptions: TableOptions.CreateIfNotExists);
-        ClosedDaySeeder.Seed(db, tp);
+        ClosedDaySeeder.Seed(db);
     }
 }
