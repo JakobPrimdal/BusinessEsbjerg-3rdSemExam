@@ -92,3 +92,9 @@ export function ruleSetErrorMessage(e: unknown): string {
   }
   return errorMessage(e);
 }
+export function holidayErrorMessage(e: unknown): string {
+    const status = httpStatus(e);
+    const detail = (e as HttpResponse<unknown, Problem>)?.error?.detail;
+    if (detail && (status === 400 || status === 404)) return detail;
+    return errorMessage(e);
+}
