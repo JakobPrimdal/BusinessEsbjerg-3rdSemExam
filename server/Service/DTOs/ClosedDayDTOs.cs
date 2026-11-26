@@ -12,6 +12,7 @@ namespace Service.DTOs;
         public DateOnly? RecurringUntil { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public bool IsDeleted { get; set; }
     }
 
     public record ClosedDayRequestDTO

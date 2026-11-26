@@ -81,7 +81,8 @@ public class ClosedDayService(HolidayDb db) : IClosedDayService
             IsRecurring = entity.IsRecurring,
             RecurringUntil = entity.RecurringUntil,
             CreatedAt = entity.CreatedAt,
-            UpdatedAt = entity.UpdatedAt
+            UpdatedAt = entity.UpdatedAt,
+            IsDeleted = entity.IsDeleted
         };
     }
 
