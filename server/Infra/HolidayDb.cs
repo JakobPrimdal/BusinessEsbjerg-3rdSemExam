@@ -13,4 +13,5 @@ public class HolidayDb(DataOptions<HolidayDb> options) : DataConnection(options.
     public ITable<HolidayRuleSet> HolidayRuleSets => this.GetTable<HolidayRuleSet>();
     public ITable<HolidayRequest> HolidayRequests => this.GetTable<HolidayRequest>();
     public ITable<ActivityLog> ActivityLogs => this.GetTable<ActivityLog>();
+    public ITable<ClosedDay> ClosedDays => this.GetTable<ClosedDay>();
 }

@@ -24,4 +24,10 @@ public static class DbInitializer
         db.CreateTable<HolidayRuleSet>(tableOptions: TableOptions.CreateIfNotExists);
         HolidayRuleSetSeeder.Seed(db, tp);
     }
+
+    public static void HolidayDbInitialize(HolidayDb db, TimeProvider tp)
+    {
+        db.CreateTable<ClosedDay>(tableOptions: TableOptions.CreateIfNotExists);
+        ClosedDaySeeder.Seed(db, tp);
+    }
 }
