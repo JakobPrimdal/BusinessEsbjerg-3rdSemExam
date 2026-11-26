@@ -33,7 +33,7 @@ public class HolidayRuleSetController(IHolidayRuleSetService ruleSetService) : C
     {
         var createdBy = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.Identity?.Name;
 
-        return ruleSetService.CreateVersion(dto, createdBy);
+        return ruleSetService.CreateVersion(dto, createdBy!);
     }
 
     [Authorize(Roles = "Admin")]

@@ -22,7 +22,7 @@ public class AuthService (ILoginDb db,ITokenService tokenService,IPasswordHasher
         if (password.Length < 7)
             throw new BadRequestException("Password must be at least 7 characters");
         
-        if (await db.UsernameExistsAsync(dto.Username.Trim()))
+        if (await db.UsernameExistsAsync(dto.Username!.Trim()))
             throw new BadRequestException("Username is already taken");
 
         UserRole role = RoleToEnum(dto.Role);
