@@ -7,12 +7,13 @@ using Service.DTOs;
 
 namespace Api.Controllers;
 
+[Authorize]
 public class HolidayController(
     HolidayService holidayService,
     HolidayRequestService requestService,
-    HolidayDecisionService decisionService) : ControllerBase
+    HolidayDecisionService decisionService,
+    ClosedDayService closedDayService) : ControllerBase
 {
-    [Authorize]
     [HttpGet("holiday/" + nameof(GetMyBalance))]
     public HolidayBalanceDTO GetMyBalance()
         => holidayService.GetBalance(CurrentUserId());
@@ -38,12 +39,10 @@ public class HolidayController(
         return Ok(new { month = HolidayService.FirstDayOfMonth(month), usersUpdated = count });
     }
 
-    [Authorize]
     [HttpPost("holiday/" + nameof(PreviewRequest))]
     public HolidayRequestPreviewDTO PreviewRequest([FromBody] CreateHolidayRequestDTO dto)
         => requestService.Preview(CurrentUserId(), dto);
 
-    [Authorize]
     [HttpPost("holiday/" + nameof(RequestHoliday))]
     public HolidayRequestDTO RequestHoliday([FromBody] CreateHolidayRequestDTO dto)
         => requestService.Create(CurrentUserId(), dto);
@@ -63,6 +62,34 @@ public class HolidayController(
     public HolidayDecisionDTO DenyRequest(Guid requestId, [FromBody] DenyHolidayRequestDTO dto)
         => decisionService.Deny(requestId, CurrentUserId(), dto.Reason);
 
+    
+    // Closed days
+    
+    [HttpGet("holiday/" + nameof(GetClosedDays))]
+    public ActionResult<ClosedDayResponseDTO> GetClosedDays()
+    {
+        return Ok(closedDayService.GetAllClosedDays());
+    }
+
+    [HttpPost("holiday/" + nameof(CreateClosedDay))]
+    public ActionResult<ClosedDayResponseDTO> CreateClosedDay([FromBody] ClosedDayRequestDTO dto)
+    {
+        return closedDayService.CreateClosedDay(dto);
+    }
+
+    [HttpPost("holiday/" + nameof(UpdateClosedDay))]
+    public ActionResult<ClosedDayResponseDTO> UpdateClosedDay(Guid id, [FromBody] ClosedDayRequestDTO dto)
+    {
+        return closedDayService.UpdateClosedDay(id, dto);
+    }
+
+    [HttpPost("holiday/" + nameof(ToggleDelete))]
+    public ActionResult<ClosedDayResponseDTO> ToggleDelete(Guid id)
+    {
+        return closedDayService.ToggleIsDeleted(id);
+    }
+    
+    // Helpers
     private string CurrentUserId()
         => HttpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
 }
