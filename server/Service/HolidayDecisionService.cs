@@ -43,12 +43,19 @@ public class HolidayDecisionService(
             .Select(p =>
             {
                 var r = p.Request;
+                var schedules = requestService.SchedulesFor(r.UserId);
                 var rules = requestService.CheckHolidayRules(
-                    r.UserId, r.HolidayType, r.StartDate, r.Hours, requestService.SchedulesFor(r.UserId), r.Id);
+                    r.UserId, r.HolidayType, r.StartDate, r.Hours, schedules, r.Id);
+
+                // Same warnings the employee saw, with the notice counted from the day the request was made
+                var workingDays = HolidayRequestService.CalculateCost(r.StartDate, r.EndDate, schedules).WorkingDays;
+                var warnings = requestService.CheckWarnings(
+                    r.UserId, r.HolidayType, r.StartDate, r.EndDate, workingDays, schedules,
+                    madeOn: DateOnly.FromDateTime(r.CreatedAt), existingRequestId: r.Id);
 
                 return new PendingHolidayRequestDTO(
                     r.Id, r.UserId, p.Username, r.HolidayType, r.StartDate, r.EndDate, r.Hours, r.CreatedAt,
-                    rules.BalanceBefore, rules.BalanceAfter, rules.Error);
+                    rules.BalanceBefore, rules.BalanceAfter, rules.Error, warnings);
             })
             .ToList();
     }

@@ -202,6 +202,66 @@ export interface DenyHolidayRequestDTO {
   reason?: string | null;
 }
 
+export interface MyHolidayRequestDTO {
+  /** @format guid */
+  id?: string;
+  holidayType?: string;
+  /** @format date */
+  startDate?: string;
+  /** @format date */
+  endDate?: string;
+  /** @format decimal */
+  hours?: number;
+  status?: string;
+  /** @format date-time */
+  createdAt?: string;
+  decisionReason?: string | null;
+  cancellationDecisionReason?: string | null;
+  canCancel?: boolean;
+  cancelNeedsApproval?: boolean;
+}
+
+export interface HolidayCancellationDTO {
+  /** @format guid */
+  id?: string;
+  status?: string;
+  hoursReturned?: boolean;
+  /** @format decimal */
+  hours?: number;
+}
+
+export interface CancellationRequestDTO {
+  /** @format guid */
+  id?: string;
+  userId?: string;
+  username?: string;
+  holidayType?: string;
+  /** @format date */
+  startDate?: string;
+  /** @format date */
+  endDate?: string;
+  /** @format decimal */
+  hours?: number;
+  /** @format date-time */
+  cancellationRequestedAt?: string;
+}
+
+export interface CancellationDecisionDTO {
+  /** @format guid */
+  id?: string;
+  status?: string;
+  decidedBy?: string;
+  /** @format date-time */
+  decidedAt?: string;
+  reason?: string | null;
+  /** @format decimal */
+  hoursReturned?: number;
+}
+
+export interface DenyCancellationDTO {
+  reason?: string | null;
+}
+
 export interface HolidayRuleSetResponseDTO {
   /** @format guid */
   id?: string;
@@ -943,6 +1003,100 @@ export class Api<
     ) =>
       this.request<HolidayDecisionDTO, any>({
         path: `/holiday/DenyRequest/${requestId}`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Holiday
+     * @name HolidayGetMyRequests
+     * @request GET:/holiday/GetMyRequests
+     * @secure
+     */
+    holidayGetMyRequests: (params: RequestParams = {}) =>
+      this.request<MyHolidayRequestDTO[], any>({
+        path: `/holiday/GetMyRequests`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Holiday
+     * @name HolidayCancelRequest
+     * @request POST:/holiday/CancelRequest/{requestId}
+     * @secure
+     */
+    holidayCancelRequest: (requestId: string, params: RequestParams = {}) =>
+      this.request<HolidayCancellationDTO, any>({
+        path: `/holiday/CancelRequest/${requestId}`,
+        method: "POST",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Holiday
+     * @name HolidayGetCancellationRequests
+     * @request GET:/holiday/GetCancellationRequests
+     * @secure
+     */
+    holidayGetCancellationRequests: (params: RequestParams = {}) =>
+      this.request<CancellationRequestDTO[], any>({
+        path: `/holiday/GetCancellationRequests`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Holiday
+     * @name HolidayApproveCancellation
+     * @request POST:/holiday/ApproveCancellation/{requestId}
+     * @secure
+     */
+    holidayApproveCancellation: (
+      requestId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<CancellationDecisionDTO, any>({
+        path: `/holiday/ApproveCancellation/${requestId}`,
+        method: "POST",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Holiday
+     * @name HolidayDenyCancellation
+     * @request POST:/holiday/DenyCancellation/{requestId}
+     * @secure
+     */
+    holidayDenyCancellation: (
+      requestId: string,
+      data: DenyCancellationDTO,
+      params: RequestParams = {},
+    ) =>
+      this.request<CancellationDecisionDTO, any>({
+        path: `/holiday/DenyCancellation/${requestId}`,
         method: "POST",
         body: data,
         secure: true,
