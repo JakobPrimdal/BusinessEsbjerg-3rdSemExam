@@ -13,6 +13,7 @@ import {RequestHolidayPage} from "@/pages/RequestHolidayPage.tsx";
 import {PendingRequestsPage} from "@/pages/PendingRequestPage.tsx";
 import { ActivityLogPage } from "@/pages/ActivityLogPage";
 import {MyRequestsPage} from "@/pages/MyRequestPage.tsx";
+import {CancellationRequestsPage} from "@/pages/CancellationRequestPage.tsx";
 
 export function App() {
   return (
@@ -52,6 +53,14 @@ export function App() {
                     element={
                         <RequireRole role={UserRole.Accountant}>
                             <PendingRequestsPage />
+                        </RequireRole>
+                    }
+                />
+                <Route
+                    path="/ferie/annulleringer"
+                    element={
+                        <RequireRole role={UserRole.Accountant}>
+                            <CancellationRequestsPage />
                         </RequireRole>
                     }
                 />

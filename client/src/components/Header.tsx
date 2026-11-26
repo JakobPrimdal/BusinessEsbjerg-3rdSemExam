@@ -39,6 +39,11 @@ export function Header() {
                                 Anmodninger
                             </NavLink>
                         )}
+                        {isAccountant && (
+                            <NavLink to="/ferie/annulleringer" className={navClass}>
+                                Annulleringer
+                            </NavLink>
+                        )}
                     </nav>
                 )}
                 {isAdmin && (
