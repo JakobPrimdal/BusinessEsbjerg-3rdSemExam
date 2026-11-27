@@ -29,11 +29,19 @@ export function Header() {
                                 <NavLink to="/ferie/anmod" className={navClass}>
                                     Anmod om ferie
                                 </NavLink>
+                                <NavLink to="/ferie/mine" className={navClass}>
+                                    Mine anmodninger
+                                </NavLink>
                             </>
                         )}
                         {isAccountant && (
                             <NavLink to="/ferie/anmodninger" className={navClass}>
                                 Anmodninger
+                            </NavLink>
+                        )}
+                        {isAccountant && (
+                            <NavLink to="/ferie/annulleringer" className={navClass}>
+                                Annulleringer
                             </NavLink>
                         )}
                     </nav>
